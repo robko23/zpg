@@ -9,7 +9,6 @@ add_definitions(-D GLFW_BUILD_X11=1 -D GLFW_BUILD_WAYLAND=0 -D _GLFW_X11)
 remove_definitions(_D _GLFW_WAYLAND)
 
 set(OpenGL_GL_PREFERENCE LEGACY)
-file(GLOB LIBS "vendor/*")
 
 find_package(OpenGL REQUIRED)
 
@@ -21,10 +20,13 @@ else (OPENGL_FOUND)
     message("opengl not found")
 endif ()
 
-add_subdirectory(${LIBS})
+add_subdirectory(vendor/glm)
+add_subdirectory(vendor/glfw)
+add_subdirectory(vendor/glew/build/cmake)
 
 include_directories(vendor/glfw/include)
 include_directories(vendor/glm/)
+include_directories(vendor/glew/include)
 
 add_executable(zpg ${SOURCES})
 

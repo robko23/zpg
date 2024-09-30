@@ -1,3 +1,5 @@
+lib
+bin
 CMakeDoxyfile.in
 CMakeDoxygenDefaults.cmake
 zpg

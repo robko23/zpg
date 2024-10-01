@@ -8,17 +8,11 @@
 #include <GL/glew.h>
 #include <cstdio>
 #include <GLFW/glfw3.h>
+#include <cassert>
+#include <functional>
+#include <optional>
+#include <memory>
 
-
-class GLFWContext {
-private:
-
-    friend class Application;
-
-    ~GLFWContext() {
-
-    }
-};
 
 class Application {
     // Application holds an invariant: is instance exists, glfw is initialized, glew is
@@ -27,89 +21,30 @@ private:
     static Application* instance;
     GLFWwindow* window;
 
-    explicit Application(GLFWwindow* window) : window(window) {
-        printf("initialization successfull");
-        this->printInfo();
-    };
+    explicit Application(GLFWwindow* window);
 
+    void tick(const std::function<void()> &render);
 
 public:
-    void printInfo();
+    Application(Application const &) = delete;
 
-    inline static Application* get_instance() {
-        if (nullptr == Application::instance) {
-            return Application::init();
-        }
-        return Application::instance;
-    }
+    void operator=(Application const &) = delete;
 
-    static Application* init() {
-        glfwSetErrorCallback([](int error, const char* description) -> void {
-            fprintf(stderr, "ERROR: in glfw: error code: %d, error description: %s", error,
-                    description);
-        });
+    void print_info();
 
-        if (nullptr != Application::instance) {
-            printf("WARN: double initialization of application app\n");
-            return Application::instance;
-        }
-        if (!glfwInit()) {
-            fprintf(stderr, "ERROR: could not start GLFW3\n");
-            return nullptr;
-        }
+    static Application* get_instance();
 
-        GLFWwindow* window = glfwCreateWindow(800, 600, "ZPG", nullptr, nullptr);
-        if (!window) {
-            glfwTerminate();
-            fprintf(stderr, "ERROR: could not create GLFW window\n");
-            return nullptr;
-        }
+    static bool init();
 
-        glfwMakeContextCurrent(window);
-        glfwSwapInterval(1);
-
-        // start GLEW extension handler
-        glewExperimental = GL_TRUE;
-        GLenum init_status = glewInit();
-        if (init_status != GLEW_OK) {
-            fprintf(stderr, "ERROR: failed to init glew\n");
-            glfwTerminate();
-            return nullptr;
-        }
-
-        int width, height;
-        glfwGetFramebufferSize(window, &width, &height);
-        glViewport(0, 0, width, height);
-
-        auto app = new Application(window);
-        Application::instance = app;
-        return app;
-    }
-
-    void tick() {
-        // clear color and depth buffer
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-        // update other events like input handling
-        glfwPollEvents();
-        // put the stuff we’ve been drawing onto the display
-        glfwSwapBuffers(window);
-    }
-
-    void run() {
+    void run(const std::function<void()> &render) {
         while (!glfwWindowShouldClose(window)) {
-            this->tick();
+            this->tick(render);
         }
     }
 
-    ~Application() {
-        if (window) {
-            glfwDestroyWindow(window);
-        }
-
-        glfwTerminate();
-    }
+    ~Application();
 };
+
 
 
 #endif //ZPG_APPLICATION_H

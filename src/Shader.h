@@ -47,11 +47,10 @@ public:
         if (GL_FALSE == status) {
             GLint infoLogLength;
             glGetShaderiv(shader_id, GL_INFO_LOG_LENGTH, &infoLogLength);
-            auto* infoLog = new GLchar[infoLogLength + 1];
-            glGetShaderInfoLog(shader_id, 512, nullptr, infoLog);
-            infoLog[infoLogLength] = '\0';
+            auto infoLog = std::make_unique<char>(infoLogLength + 1);
+            glGetShaderInfoLog(shader_id, 512, nullptr, infoLog.get());
+            infoLog.get()[infoLogLength] = '\0';
             std::cerr << "ERROR: failed to compile shader: " << infoLog << std::endl;
-            delete[] infoLog;
             return {};
         }
 
@@ -73,6 +72,8 @@ private: \
 DEFINE_SHADER(FragmentShader, GL_FRAGMENT_SHADER)
 
 DEFINE_SHADER(VertexShader, GL_VERTEX_SHADER)
+
+#undef DEFINE_SHADER
 
 class ShaderProgram {
 private:
@@ -101,10 +102,9 @@ public:
         if (GL_FALSE == status) {
             GLint infoLogLength;
             glGetProgramiv(program, GL_INFO_LOG_LENGTH, &infoLogLength);
-            auto* infoLog = new GLchar[infoLogLength + 1];
-            glGetProgramInfoLog(program, infoLogLength, nullptr, infoLog);
+            auto infoLog = std::make_unique<char>(infoLogLength + 1);
+            glGetProgramInfoLog(program, infoLogLength, nullptr, infoLog.get());
             std::cerr << "ERROR: failed to link shader program: " << infoLog << std::endl;
-            delete[] infoLog;
             return {};
         }
 

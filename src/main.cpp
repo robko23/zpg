@@ -11,6 +11,8 @@
 
 #include "Application.h"
 #include "Shader.h"
+#include "GLFWContext.h"
+#include "gl_info.h"
 
 //Include the standard C++ headers
 #include <cstdlib>
@@ -96,83 +98,72 @@ glm::mat4 View = glm::lookAt(
 glm::mat4 Model = glm::mat4(1.0f);
 
 int main(void) {
-    if (!Application::init()) {
-        fprintf(stderr, "ERROR: Failed to initialize application");
-        exit(EXIT_FAILURE);
-    }
 
-    //vertex buffer object (VBO)
-    GLuint VBO = 0;
-    glGenBuffers(1, &VBO); // generate the VBO
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(points), points, GL_STATIC_DRAW);
+    GLFWcontext::inContext([]() {
+        if (!Application::init()) {
+            fprintf(stderr, "ERROR: Failed to initialize application");
+            exit(EXIT_FAILURE);
+        }
+
+        Application::get_instance()->window.inContext([]() {
+            print_gl_info();
+
+            //vertex buffer object (VBO)
+            GLuint VBO = 0;
+            glGenBuffers(1, &VBO); // generate the VBO
+            glBindBuffer(GL_ARRAY_BUFFER, VBO);
+            glBufferData(GL_ARRAY_BUFFER, sizeof(points), points, GL_STATIC_DRAW);
 
 //Vertex Array Object (VAO)
-    GLuint VAO = 0;
-    glGenVertexArrays(1, &VAO); //generate the VAO
-    glBindVertexArray(VAO); //bind the VAO
-    glEnableVertexAttribArray(0); //enable vertex attributes
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+            GLuint VAO = 0;
+            glGenVertexArrays(1, &VAO); //generate the VAO
+            glBindVertexArray(VAO); //bind the VAO
+            glEnableVertexAttribArray(0); //enable vertex attributes
+            glBindBuffer(GL_ARRAY_BUFFER, VBO);
+            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, NULL);
 
-    GLuint vbo2 = 0;
-    glGenBuffers(1, &vbo2);
-    glBindBuffer(GL_ARRAY_BUFFER, vbo2);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(points2), points2, GL_STATIC_DRAW);
+            GLuint vbo2 = 0;
+            glGenBuffers(1, &vbo2);
+            glBindBuffer(GL_ARRAY_BUFFER, vbo2);
+            glBufferData(GL_ARRAY_BUFFER, sizeof(points2), points2, GL_STATIC_DRAW);
 
-    GLuint vao2 = 0;
-    glGenVertexArrays(1, &vao2); //generate the VAO
-    glBindVertexArray(vao2); //bind the VAO
-    glEnableVertexAttribArray(0); //enable vertex attributes
-    glBindBuffer(GL_ARRAY_BUFFER, vbo2);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+            GLuint vao2 = 0;
+            glGenVertexArrays(1, &vao2); //generate the VAO
+            glBindVertexArray(vao2); //bind the VAO
+            glEnableVertexAttribArray(0); //enable vertex attributes
+            glBindBuffer(GL_ARRAY_BUFFER, vbo2);
+            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, NULL);
 
-    //create and compile shaders
-    auto maybeVertexShader = VertexShader::compile(vertex_shader);
-    // todo: handle maybe value
-    auto vertexShader = maybeVertexShader.value();
-    auto maybeFragmentShader = FragmentShader::compile(fragment_shader);
-    auto fragmentShader = maybeFragmentShader.value();
-    auto maybeFragmentShader2 = FragmentShader::compile(fragment_shader2);
-    auto fragmentShader2 = maybeFragmentShader2.value();
+            //create and compile shaders
+            auto maybeVertexShader = VertexShader::compile(vertex_shader);
+            // todo: handle maybe value
+            auto maybeFragmentShader = FragmentShader::compile(fragment_shader);
+            auto maybeFragmentShader2 = FragmentShader::compile(fragment_shader2);
 
-    auto shaderProgram = ShaderProgram::link(fragmentShader, vertexShader);
+            auto vertexShader = maybeVertexShader.value();
+            auto fragmentShader = maybeFragmentShader.value();
+            auto fragmentShader2 = maybeFragmentShader2.value();
 
-    auto shaderProgram2 = ShaderProgram::link(fragmentShader2, vertexShader);
+            auto shaderProgram = ShaderProgram::link(fragmentShader, vertexShader);
 
-    Application::get_instance()->run([&shaderProgram, &VAO, &shaderProgram2, &vao2]() -> void {
-        shaderProgram.value().withShader([&VAO]() -> void {
-            glBindVertexArray(VAO);
-            // draw triangles
-            glDrawArrays(GL_TRIANGLES, 0, 3); //mode,first,count
+            auto shaderProgram2 = ShaderProgram::link(fragmentShader2, vertexShader);
+
+            Application::get_instance()->run(
+                    [&shaderProgram, &VAO, &shaderProgram2, &vao2]() -> void {
+                        shaderProgram.value().withShader([&VAO]() -> void {
+                            glBindVertexArray(VAO);
+                            // draw triangles
+                            glDrawArrays(GL_TRIANGLES, 0, 3); //mode,first,count
+                        });
+
+                        shaderProgram2.value().withShader([&vao2]() -> void {
+                            glBindVertexArray(vao2);
+                            glDrawArrays(GL_TRIANGLES, 0, 3);
+                        });
+                    });
         });
 
-//        glUseProgram(shaderProgram2);
-        shaderProgram2.value().withShader([&vao2]() -> void {
-            glBindVertexArray(vao2);
-            glDrawArrays(GL_TRIANGLES, 0, 3);
-        });
     });
 
-//    while (!glfwWindowShouldClose(window)) {
-//        // clear color and depth buffer
-//        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-//        glUseProgram(shaderProgram);
-//        glBindVertexArray(VAO);
-//        // draw triangles
-//        glDrawArrays(GL_TRIANGLES, 0, 3); //mode,first,count
-//
-//        glUseProgram(shaderProgram2);
-//        glBindVertexArray(vao2);
-//        glDrawArrays(GL_TRIANGLES, 0, 3);
-//        // update other events like input handling
-//        glfwPollEvents();
-//        // put the stuff we’ve been drawing onto the display
-//        glfwSwapBuffers(window);
-//    }
-//
-//    glfwDestroyWindow(window);
-//
-//    glfwTerminate();
-    exit(EXIT_SUCCESS);
+    return EXIT_SUCCESS;
 }

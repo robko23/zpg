@@ -1,4 +1,7 @@
 lib
+vendor/glew/build/cmake/glew.pc
+build.ninja
+.cmake/
 bin
 CMakeDoxyfile.in
 CMakeDoxygenDefaults.cmake

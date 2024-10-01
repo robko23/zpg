@@ -30,4 +30,4 @@ include_directories(vendor/glew/include)
 
 add_executable(zpg ${SOURCES})
 
-target_link_libraries(zpg PRIVATE glfw ${OPENGL_gl_LIBRARY})
+target_link_libraries(zpg PRIVATE glfw ${OPENGL_gl_LIBRARY} glew)

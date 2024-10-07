@@ -6,9 +6,8 @@
 #define ZPG_GLWINDOW_H
 
 #include <optional>
-#include <GL/glew.h>
-#include <GL/gl.h>
 #include "assertions.h"
+#include "gl_info.h"
 #include <iostream>
 
 class GLWindow {
@@ -130,21 +129,23 @@ public:
     static std::optional<GLWindow> create(const char* title) {
         GLFWwindow* window = glfwCreateWindow(800, 600, title, nullptr, nullptr);
         if (nullptr == window) {
-            glfwTerminate();
             std::cerr << "ERROR: could not create GLFW window. are you in glfw context?"
                       << std::endl;
             return {};
         }
         glfwMakeContextCurrent(window);
+        glfwSwapInterval(1);
 
         glewExperimental = GL_TRUE;
         GLenum init_status = glewInit();
-        if (GLEW_OK != init_status) {
-            std::cerr << "ERROR: failed to init glew" << std::endl;
-            glfwDestroyWindow(window);
-            glfwMakeContextCurrent(nullptr);
-            return {};
-        }
+        // HUH?
+//        if (GLEW_OK != init_status) {
+//            auto err = glewGetErrorString(init_status);
+//            std::cerr << "ERROR: failed to init glew: " << init_status << " " << err << std::endl;
+//            glfwDestroyWindow(window);
+//            glfwMakeContextCurrent(nullptr);
+//            return {};
+//        }
 
         DEBUG_ASSERT_NOT_NULL(window);
         auto instance = GLWindow(window);

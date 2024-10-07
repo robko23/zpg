@@ -10,7 +10,7 @@
 #include <iostream>
 #include <GLFW/glfw3.h>
 
-void print_gl_info() {
+inline void print_gl_info() {
     auto gl_version = glGetString(GL_VERSION);
     DEBUG_ASSERT_NOT_NULL(gl_version);
     std::cout << "OpenGL Version: " << gl_version << std::endl;

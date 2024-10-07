@@ -15,8 +15,19 @@
     { \
         if (!static_cast<bool>(x)) { \
             fprintf(stderr, \
-                    "Assertion failed: %s. In file: %s, line %d", \
+                    "Assertion failed: %s. In file: %s, line %d\n", \
             #x, __FILE__, __LINE__); \
+            raise(SIGABRT); \
+        } \
+    }
+
+#define DEBUG_ASSERTF(x, ...) \
+    { \
+        if (!static_cast<bool>(x)) { \
+            fprintf(stderr, \
+                    "Assertion failed: %s. In file: %s, line %d\n", \
+            #x, __FILE__, __LINE__); \
+            fprintf(stderr, __VA_ARGS__); \
             raise(SIGABRT); \
         } \
     }
@@ -25,7 +36,7 @@
     { \
         if (nullptr == x) { \
             fprintf(stderr, \
-                    "Assertion failed. %s is NULL. In file: %s, line %d", \
+                    "Assertion failed. %s is NULL. In file: %s, line %d\n", \
             #x, __FILE__, __LINE__); \
             raise(SIGABRT); \
         } \

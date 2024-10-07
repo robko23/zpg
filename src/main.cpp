@@ -9,28 +9,16 @@
 #include <glm/gtc/matrix_transform.hpp> // glm::translate, glm::rotate, glm::scale, glm::perspective
 #include <glm/gtc/type_ptr.hpp> // glm::value_ptr
 
-#include "Application.h"
-#include "Shader.h"
-#include "GLFWContext.h"
-#include "gl_info.h"
-
 //Include the standard C++ headers
 #include <cstdlib>
 #include <cstdio>
 
-float points[] = {
-        0.0f, 0.5f, 0.0f,
-        0.5f, -0.5f, 0.0f,
-        -0.5f, -0.5f, 0.0f
-};
-
-float points2[] = {
-        0.5, 0.7, 0.,
-        0.7, 0.9, 0.,
-        0, 1, -.5f,
-        .5f, .5f, 1,
-        1, 0, 0,
-};
+#include "Application.h"
+#include "Shader.h"
+#include "GLFWContext.h"
+#include "gl_info.h"
+#include "drawable/Triangle.h"
+#include "drawable/Rectangle.h"
 
 const char* vertex_shader =
         "#version 330\n"
@@ -53,8 +41,6 @@ const char* fragment_shader2 =
         "void main () {"
         "     frag_colour = vec4 (0.0, 1.0, 1.0, 1.0);"
         "}";
-
-static void error_callback(int error, const char* description) { fputs(description, stderr); }
 
 static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
@@ -98,7 +84,6 @@ glm::mat4 View = glm::lookAt(
 glm::mat4 Model = glm::mat4(1.0f);
 
 int main(void) {
-
     GLFWcontext::inContext([]() {
         if (!Application::init()) {
             fprintf(stderr, "ERROR: Failed to initialize application");
@@ -108,38 +93,15 @@ int main(void) {
         Application::get_instance()->window.inContext([]() {
             print_gl_info();
 
-            //vertex buffer object (VBO)
-            GLuint VBO = 0;
-            glGenBuffers(1, &VBO); // generate the VBO
-            glBindBuffer(GL_ARRAY_BUFFER, VBO);
-            glBufferData(GL_ARRAY_BUFFER, sizeof(points), points, GL_STATIC_DRAW);
-
-//Vertex Array Object (VAO)
-            GLuint VAO = 0;
-            glGenVertexArrays(1, &VAO); //generate the VAO
-            glBindVertexArray(VAO); //bind the VAO
-            glEnableVertexAttribArray(0); //enable vertex attributes
-            glBindBuffer(GL_ARRAY_BUFFER, VBO);
-            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, NULL);
-
-            GLuint vbo2 = 0;
-            glGenBuffers(1, &vbo2);
-            glBindBuffer(GL_ARRAY_BUFFER, vbo2);
-            glBufferData(GL_ARRAY_BUFFER, sizeof(points2), points2, GL_STATIC_DRAW);
-
-            GLuint vao2 = 0;
-            glGenVertexArrays(1, &vao2); //generate the VAO
-            glBindVertexArray(vao2); //bind the VAO
-            glEnableVertexAttribArray(0); //enable vertex attributes
-            glBindBuffer(GL_ARRAY_BUFFER, vbo2);
-            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+            Triangle triangle;
+            Rectangle square;
 
             //create and compile shaders
             auto maybeVertexShader = VertexShader::compile(vertex_shader);
-            // todo: handle maybe value
             auto maybeFragmentShader = FragmentShader::compile(fragment_shader);
             auto maybeFragmentShader2 = FragmentShader::compile(fragment_shader2);
 
+            // todo: handle maybe value
             auto vertexShader = maybeVertexShader.value();
             auto fragmentShader = maybeFragmentShader.value();
             auto fragmentShader2 = maybeFragmentShader2.value();
@@ -149,17 +111,9 @@ int main(void) {
             auto shaderProgram2 = ShaderProgram::link(fragmentShader2, vertexShader);
 
             Application::get_instance()->run(
-                    [&shaderProgram, &VAO, &shaderProgram2, &vao2]() -> void {
-                        shaderProgram.value().withShader([&VAO]() -> void {
-                            glBindVertexArray(VAO);
-                            // draw triangles
-                            glDrawArrays(GL_TRIANGLES, 0, 3); //mode,first,count
-                        });
-
-                        shaderProgram2.value().withShader([&vao2]() -> void {
-                            glBindVertexArray(vao2);
-                            glDrawArrays(GL_TRIANGLES, 0, 3);
-                        });
+                    [&shaderProgram, &triangle, &shaderProgram2, &square]() -> void {
+                        triangle.draw(shaderProgram.value());
+                        square.draw(shaderProgram2.value());
                     });
         });
 

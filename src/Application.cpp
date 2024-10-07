@@ -23,7 +23,6 @@ bool Application::init() {
 
 Application::Application(GLWindow window) : window(std::move(window)) {
     std::cout << "initialization successful" << std::endl;
-    this->print_info();
 }
 
 Application* Application::get_instance() {

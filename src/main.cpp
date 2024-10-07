@@ -17,44 +17,28 @@
 #include "Shader.h"
 #include "GLFWContext.h"
 #include "gl_info.h"
-#include "drawable/Triangle.h"
-#include "drawable/Rectangle.h"
+#include "drawable/Sphere.h"
 
 const char* vertex_shader =
         "#version 330\n"
         "layout(location=0) in vec3 vp;"
+        "layout(location=0) in vec3 vn;"
+        "out vec3 color;"
+        "uniform mat4 modelMatrix;"
         "void main () {"
-        "     gl_Position = vec4 (vp, 1.0);"
+        "     color = vn;"
+        "     gl_Position = modelMatrix * vec4 (vp, 1.0);"
         "}";
 
 
 const char* fragment_shader =
         "#version 330\n"
         "out vec4 frag_colour;"
+        "in vec3 color;"
         "void main () {"
-        "     frag_colour = vec4 (0.5, 0.0, 0.5, 1.0);"
+        "     frag_colour = vec4 (color, 1.0);"
         "}";
 
-const char* fragment_shader2 =
-        "#version 330\n"
-        "out vec4 frag_colour;"
-        "void main () {"
-        "     frag_colour = vec4 (0.0, 1.0, 1.0, 1.0);"
-        "}";
-
-//GLM test
-
-// Projection matrix : 45� Field of View, 4:3 ratio, display range : 0.1 unit <-> 100 units
-glm::mat4 Projection = glm::perspective(45.0f, 4.0f / 3.0f, 0.01f, 100.0f);
-
-// Camera matrix
-glm::mat4 View = glm::lookAt(
-        glm::vec3(10, 10, 10), // Camera is at (4,3,-3), in World Space
-        glm::vec3(0, 0, 0), // and looks at the origin
-        glm::vec3(0, 1, 0)  // Head is up (set to 0,-1,0 to look upside-down)
-);
-// Model matrix : an identity matrix (model will be at the origin)
-glm::mat4 Model = glm::mat4(1.0f);
 
 int main(void) {
     GLFWcontext::inContext([]() {
@@ -66,27 +50,36 @@ int main(void) {
         Application::get_instance()->window.inContext([]() {
             print_gl_info();
 
-            Triangle triangle;
-            Rectangle square;
+            Sphere sphere;
 
             //create and compile shaders
             auto maybeVertexShader = VertexShader::compile(vertex_shader);
             auto maybeFragmentShader = FragmentShader::compile(fragment_shader);
-            auto maybeFragmentShader2 = FragmentShader::compile(fragment_shader2);
 
             // todo: handle maybe value
             auto vertexShader = maybeVertexShader.value();
             auto fragmentShader = maybeFragmentShader.value();
-            auto fragmentShader2 = maybeFragmentShader2.value();
 
             auto shaderProgram = ShaderProgram::link(fragmentShader, vertexShader);
 
-            auto shaderProgram2 = ShaderProgram::link(fragmentShader2, vertexShader);
+            glm::mat4 M = glm::mat4(1.0f); // construct identity matrix
+
+            float angle = 0.9;
+            float myView = 0.2;
+            M = glm::rotate(M, angle, glm::vec3(1.0f, 1.0f, 1.0f));
+//            M = glm::rotate(M, angle, glm::vec3(1.0f, 0.0f, 0.0f));
+            M = glm::translate(M, glm::vec3(0.0f, 0.0f, myView));
+            M = glm::scale(M, glm::vec3(0.5f));
+
+            GLint idModelTransform = glGetUniformLocation(shaderProgram->getId(), "modelMatrix");
 
             Application::get_instance()->run(
-                    [&shaderProgram, &triangle, &shaderProgram2, &square]() -> void {
-                        triangle.draw(shaderProgram.value());
-                        square.draw(shaderProgram2.value());
+                    [&shaderProgram, &sphere, idModelTransform, M]() -> void {
+                        shaderProgram->withShader([&sphere, &shaderProgram, &idModelTransform, &M](){
+                            glUniformMatrix4fv(idModelTransform, 1, GL_FALSE, &M[0][0]);
+                            //location, count, transpose, *value
+                            sphere.draw(shaderProgram.value());
+                        });
                     });
         });
 

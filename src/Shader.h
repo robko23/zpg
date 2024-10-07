@@ -86,6 +86,11 @@ private:
 
 public:
 
+    // todo: remove
+    inline GLuint getId() {
+        return program_id;
+    }
+
     /*
      * Links fragment shader and vertex shader into complete program.
      * Returns null on failure and logs the error to stderr

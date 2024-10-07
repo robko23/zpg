@@ -163,6 +163,7 @@ public:
         glfwMakeContextCurrent(window);
 
         glfwSwapInterval(1);
+        glEnable(GL_DEPTH_TEST);
 
         int width, height;
         glfwGetFramebufferSize(window, &width, &height);

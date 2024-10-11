@@ -4,11 +4,14 @@
 
 #ifndef ZPG_DRAWABLE_H
 #define ZPG_DRAWABLE_H
-#include "../Shader.h"
+//#include "../Shader.h"
+#include <GL/glew.h>
+#include <GLFW/glfw3.h>
 
 class Drawable {
 public:
-    virtual void draw(ShaderProgram& shader) = 0;
+//    virtual void draw(ShaderProgram& shader) = 0;
+    virtual void draw_raw() = 0;
 };
 
 #endif //ZPG_DRAWABLE_H

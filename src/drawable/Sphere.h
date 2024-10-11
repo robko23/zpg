@@ -5,6 +5,8 @@
 #ifndef ZPG_SPHERE_H
 #define ZPG_SPHERE_H
 
+#include <GL/glew.h>
+#include <GLFW/glfw3.h>
 #include "Drawable.h"
 #include "../models/sphere.h"
 
@@ -33,12 +35,16 @@ public:
         DEBUG_ASSERT(0 != vao);
     }
 
-    void draw(ShaderProgram &shader) override {
-//        shader.withShader([this]() -> void {
-            glBindVertexArray(this->vao);
-            glDrawArrays(GL_TRIANGLES, 0, 2880);
-//        });
+    void draw_raw() override {
+        glBindVertexArray(this->vao);
+        glDrawArrays(GL_TRIANGLES, 0, 2880);
     }
+
+//    void draw(ShaderProgram &shader) override {
+//        shader.withShader([this]() -> void {
+//            this->draw_raw();
+//        });
+//    }
 };
 
 #endif //ZPG_SPHERE_H

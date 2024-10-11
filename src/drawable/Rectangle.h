@@ -4,6 +4,10 @@
 
 #ifndef ZPG_RECTANGLE_H
 #define ZPG_RECTANGLE_H
+#include <GL/glew.h>
+#include <GLFW/glfw3.h>
+#include "Drawable.h"
+#include "../assertions.h"
 
 class Rectangle: public Drawable {
 private:
@@ -37,14 +41,16 @@ public:
         DEBUG_ASSERT(0 != vao);
     }
 
-    void draw(ShaderProgram &shader) override {
-        shader.withShader([this]() -> void {
-            glBindVertexArray(this->vao);
-            // draw triangles
-            glDrawArrays(GL_TRIANGLES, 0, 6); //mode,first,count
-//            glDrawArrays(GL_TRIANGLES, 3, 3); //mode,first,count
-        });
+    void draw_raw() override {
+        glBindVertexArray(this->vao);
+        glDrawArrays(GL_TRIANGLES, 0, 6); //mode,first,count
     }
+
+//    void draw(ShaderProgram &shader) override {
+//        shader.withShader([this]() -> void {
+//            this->draw_raw();
+//        });
+//    }
 };
 
 #endif //ZPG_RECTANGLE_H

@@ -22,7 +22,7 @@
 const char* vertex_shader =
         "#version 330\n"
         "layout(location=0) in vec3 vp;"
-        "layout(location=0) in vec3 vn;"
+        "layout(location=1) in vec3 vn;"
         "out vec3 color;"
         "uniform mat4 modelMatrix;"
         "void main () {"
@@ -60,9 +60,9 @@ int main(void) {
             auto vertexShader = maybeVertexShader.value();
             auto fragmentShader = maybeFragmentShader.value();
 
-            auto shaderProgram = ShaderProgram::link(fragmentShader, vertexShader);
+            auto shaderProgram = ShaderProgram::link(fragmentShader, vertexShader).value();
 
-            glm::mat4 M = glm::mat4(1.0f); // construct identity matrix
+            auto M = glm::mat4(1.0f); // construct identity matrix
 
             float angle = 0.9;
             float myView = 0.2;
@@ -71,15 +71,11 @@ int main(void) {
             M = glm::translate(M, glm::vec3(0.0f, 0.0f, myView));
             M = glm::scale(M, glm::vec3(0.5f));
 
-            GLint idModelTransform = glGetUniformLocation(shaderProgram->getId(), "modelMatrix");
-
             Application::get_instance()->run(
-                    [&shaderProgram, &sphere, idModelTransform, M]() -> void {
-                        shaderProgram->withShader([&sphere, &shaderProgram, &idModelTransform, &M](){
-                            glUniformMatrix4fv(idModelTransform, 1, GL_FALSE, &M[0][0]);
-                            //location, count, transpose, *value
-                            sphere.draw(shaderProgram.value());
-                        });
+                    [&shaderProgram, &sphere, M]() -> void {
+                        shaderProgram.begin()
+                                .bind("modelMatrix", M)
+                                .draw(sphere);
                     });
         });
 

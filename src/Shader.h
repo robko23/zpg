@@ -10,6 +10,7 @@
 #include <expected>
 #include <iostream>
 #include <optional>
+#include "drawable/Drawable.h"
 
 template<typename Derived>
 class ShaderBase {
@@ -75,6 +76,47 @@ DEFINE_SHADER(VertexShader, GL_VERTEX_SHADER)
 
 #undef DEFINE_SHADER
 
+class ShaderRunner {
+    friend class ShaderProgram;
+private:
+    GLuint program_id;
+    explicit ShaderRunner(GLuint program_id): program_id(program_id) {
+        DEBUG_ASSERT(0 != program_id);
+        glUseProgram(this->program_id);
+    }
+
+public:
+    ShaderRunner bind(const char* name, const glm::mat4& mat) const {
+        GLint id = glGetUniformLocation(program_id, name);
+        DEBUG_ASSERTF(-1 != id, "Parameter %s may not exist in the shader", name);
+
+#ifdef DEBUG_ASSERTIONS
+        {
+            GLenum err = glGetError();
+            DEBUG_ASSERT(err != GL_INVALID_VALUE);
+            DEBUG_ASSERT(err != GL_INVALID_OPERATION);
+        };
+#endif
+
+        glUniformMatrix4fv(id, 1, GL_FALSE, &mat[0][0]);
+
+#ifdef DEBUG_ASSERTIONS
+        {
+            GLenum err = glGetError();
+            DEBUG_ASSERT(err != GL_INVALID_VALUE);
+            DEBUG_ASSERT(err != GL_INVALID_OPERATION);
+        };
+#endif
+        return *this;
+    }
+
+    void draw(Drawable& drawable) const {
+        DEBUG_ASSERT(0 != program_id)
+        drawable.draw_raw();
+        glUseProgram(0);
+    }
+};
+
 class ShaderProgram {
 private:
     GLuint program_id;
@@ -82,14 +124,10 @@ private:
     explicit ShaderProgram(
             GLuint programId) :
             program_id(programId) {
+        DEBUG_ASSERT(0 != program_id);
     }
 
 public:
-
-    // todo: remove
-    inline GLuint getId() {
-        return program_id;
-    }
 
     /*
      * Links fragment shader and vertex shader into complete program.
@@ -113,14 +151,11 @@ public:
             return {};
         }
 
-        return ShaderProgram(program);;
+        return ShaderProgram(program);
     }
 
-    void withShader(const std::function<void()>& closure) const {
-        assert(0 != this->program_id);
-        glUseProgram(this->program_id);
-        closure();
-        glUseProgram(0);
+    [[nodiscard]] ShaderRunner begin() const {
+        return ShaderRunner(program_id);
     }
 };
 

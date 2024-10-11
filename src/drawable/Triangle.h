@@ -4,7 +4,10 @@
 
 #ifndef ZPG_TRIANGLE_H
 #define ZPG_TRIANGLE_H
+#include <GL/glew.h>
+#include <GLFW/glfw3.h>
 
+#include "../assertions.h"
 #include "Drawable.h"
 
 class Triangle : public Drawable {
@@ -35,13 +38,16 @@ public:
         DEBUG_ASSERT(0 != vao);
     }
 
-    void draw(ShaderProgram &shader) override {
-        shader.withShader([this]() -> void {
-            glBindVertexArray(this->vao);
-            // draw triangles
-            glDrawArrays(GL_TRIANGLES, 0, 3); //mode,first,count
-        });
+    void draw_raw() override {
+        glBindVertexArray(this->vao);
+        glDrawArrays(GL_TRIANGLES, 0, 3);
     }
+
+//    void draw(ShaderProgram &shader) override {
+//        shader.withShader([this]() -> void {
+//            this->draw_raw();
+//        });
+//    }
 };
 
 

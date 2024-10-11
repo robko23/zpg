@@ -6,6 +6,7 @@
 #define ZPG_ASSERTIONS_H
 
 #include <csignal>
+#include <cstdio>
 
 #define DEBUG_ASSERTIONS
 

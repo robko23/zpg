@@ -11,6 +11,8 @@
 #include <iostream>
 #include <optional>
 #include "drawable/Drawable.h"
+#include <memory>
+#include "assertions.h"
 
 template<typename Derived>
 class ShaderBase {

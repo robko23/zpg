@@ -35,7 +35,7 @@ public:
         DEBUG_ASSERT(0 != vao);
     }
 
-    void draw_raw() override {
+    void draw() override {
         glBindVertexArray(this->vao);
         glDrawArrays(GL_TRIANGLES, 0, 2904);
     }

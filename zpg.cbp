@@ -436,13 +436,22 @@
 				</MakeCommands>
 			</Target>
 		</Build>
+		<Unit filename="/home/robko/vsb/ZPG/src/Camera.h">
+			<Option target="zpg"/>
+		</Unit>
+		<Unit filename="/home/robko/vsb/ZPG/src/CameraObserver.h">
+			<Option target="zpg"/>
+		</Unit>
 		<Unit filename="/home/robko/vsb/ZPG/src/GLFWContext.h">
 			<Option target="zpg"/>
 		</Unit>
 		<Unit filename="/home/robko/vsb/ZPG/src/GLWindow.h">
 			<Option target="zpg"/>
 		</Unit>
-		<Unit filename="/home/robko/vsb/ZPG/src/Shader.h">
+		<Unit filename="/home/robko/vsb/ZPG/src/ShaderLoader.h">
+			<Option target="zpg"/>
+		</Unit>
+		<Unit filename="/home/robko/vsb/ZPG/src/Transformation.h">
 			<Option target="zpg"/>
 		</Unit>
 		<Unit filename="/home/robko/vsb/ZPG/src/assertions.h">
@@ -455,6 +464,9 @@
 			<Option target="zpg"/>
 		</Unit>
 		<Unit filename="/home/robko/vsb/ZPG/src/drawable/Sphere.h">
+			<Option target="zpg"/>
+		</Unit>
+		<Unit filename="/home/robko/vsb/ZPG/src/drawable/Suzi.h">
 			<Option target="zpg"/>
 		</Unit>
 		<Unit filename="/home/robko/vsb/ZPG/src/drawable/Tree.h">
@@ -488,6 +500,15 @@
 			<Option target="zpg"/>
 		</Unit>
 		<Unit filename="/home/robko/vsb/ZPG/src/models/tree.h">
+			<Option target="zpg"/>
+		</Unit>
+		<Unit filename="/home/robko/vsb/ZPG/src/scenes/SceneForest.h">
+			<Option target="zpg"/>
+		</Unit>
+		<Unit filename="/home/robko/vsb/ZPG/src/shaders/BasicShader.h">
+			<Option target="zpg"/>
+		</Unit>
+		<Unit filename="/home/robko/vsb/ZPG/src/shaders/Shader.h">
 			<Option target="zpg"/>
 		</Unit>
 		<Unit filename="/home/robko/vsb/ZPG/vendor/glew/include/GL/glew.h">

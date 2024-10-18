@@ -6,13 +6,21 @@
 #define ZPG_SHADER_H
 
 #include <GL/gl.h>
+#include "glm/mat4x4.hpp"
 #include <string>
 #include <expected>
 #include <iostream>
 #include <optional>
-#include "drawable/Drawable.h"
+#include "../drawable/Drawable.h"
 #include <memory>
-#include "assertions.h"
+#include "../assertions.h"
+
+static inline int getCurrentProgram() { // NOLINT(*-reserved-identifier)
+    static_assert(sizeof(GLint) == sizeof(int));
+    GLint prog = 0;
+    glGetIntegerv(GL_CURRENT_PROGRAM, &prog);
+    return prog;
+}
 
 template<typename Derived>
 class ShaderBase {
@@ -78,64 +86,33 @@ DEFINE_SHADER(VertexShader, GL_VERTEX_SHADER)
 
 #undef DEFINE_SHADER
 
-class ShaderRunner {
-    friend class ShaderProgram;
-private:
-    GLuint program_id;
-    explicit ShaderRunner(GLuint program_id): program_id(program_id) {
-        DEBUG_ASSERT(0 != program_id);
-        glUseProgram(this->program_id);
-    }
-
-public:
-    ShaderRunner bind(const char* name, const glm::mat4& mat) const {
-        GLint id = glGetUniformLocation(program_id, name);
-        DEBUG_ASSERTF(-1 != id, "Parameter %s may not exist in the shader", name);
-
-#ifdef DEBUG_ASSERTIONS
-        {
-            GLenum err = glGetError();
-            DEBUG_ASSERT(err != GL_INVALID_VALUE);
-            DEBUG_ASSERT(err != GL_INVALID_OPERATION);
-        };
-#endif
-
-        glUniformMatrix4fv(id, 1, GL_FALSE, &mat[0][0]);
-
-#ifdef DEBUG_ASSERTIONS
-        {
-            GLenum err = glGetError();
-            DEBUG_ASSERT(err != GL_INVALID_VALUE);
-            DEBUG_ASSERT(err != GL_INVALID_OPERATION);
-        };
-#endif
-        return *this;
-    }
-
-    void draw(Drawable& drawable) const {
-        DEBUG_ASSERT(0 != program_id)
-        drawable.draw_raw();
-        glUseProgram(0);
-    }
-};
-
 class ShaderProgram {
 private:
     GLuint program_id;
+    bool bound;
 
     explicit ShaderProgram(
             GLuint programId) :
-            program_id(programId) {
+            program_id(programId), bound(false) {
         DEBUG_ASSERT(0 != program_id);
     }
 
 public:
+
+    ShaderProgram(ShaderProgram &other) : program_id(other.program_id), bound(program_id) {
+        other.program_id = 0;
+    }
+
+    ShaderProgram(ShaderProgram &&other) noexcept: program_id(other.program_id), bound(program_id) {
+        other.program_id = 0;
+    }
 
     /*
      * Links fragment shader and vertex shader into complete program.
      * Returns null on failure and logs the error to stderr
      */
-    static std::optional<ShaderProgram> link(const FragmentShader& fragment, const VertexShader& vertex) {
+    static std::optional<ShaderProgram>
+    link(const FragmentShader &fragment, const VertexShader &vertex) {
 
         GLuint program = glCreateProgram();
         glAttachShader(program, fragment.id);
@@ -156,10 +133,93 @@ public:
         return ShaderProgram(program);
     }
 
-    [[nodiscard]] ShaderRunner begin() const {
-        return ShaderRunner(program_id);
+    inline void bind() {
+        bound = true;
+#ifdef DEBUG_ASSERTIONS
+        DEBUG_ASSERTF(getCurrentProgram() == 0,
+                      "Another shader program is bound already");
+#endif
+
+        DEBUG_ASSERT(0 != this->program_id);
+        glUseProgram(this->program_id);
+    }
+
+    inline void unbind() {
+        bound = false;
+#ifdef DEBUG_ASSERTIONS
+        DEBUG_ASSERTF(getCurrentProgram() == this->program_id,
+                      "Trying to unbind shader of another instance");
+
+        glUseProgram(0);
+#endif
+    }
+
+    [[nodiscard]] inline bool isBound() const {
+        if (this->bound) {
+#ifdef DEBUG_ASSERTIONS
+            GLint prog = 0;
+            glGetIntegerv(GL_CURRENT_PROGRAM, &prog);
+            DEBUG_ASSERT(this->program_id == prog);
+#endif
+        }
+        return this->bound;
+    }
+
+
+    void bindParam(const char* name, const glm::mat4 &mat) const {
+        DEBUG_ASSERT(this->isBound());
+
+        GLint id = glGetUniformLocation(program_id, name);
+        DEBUG_ASSERTF(-1 != id, "Parameter %s may not exist in the shader", name);
+
+#ifdef DEBUG_ASSERTIONS
+        {
+            GLenum err = glGetError();
+            DEBUG_ASSERT(err != GL_INVALID_VALUE);
+            DEBUG_ASSERT(err != GL_INVALID_OPERATION);
+        };
+#endif
+
+        glUniformMatrix4fv(id, 1, GL_FALSE, &mat[0][0]);
+
+#ifdef DEBUG_ASSERTIONS
+        {
+            GLenum err = glGetError();
+            DEBUG_ASSERT(err != GL_INVALID_VALUE);
+            DEBUG_ASSERT(err != GL_INVALID_OPERATION);
+        }
+#endif
+    }
+
+    bool operator==(const ShaderProgram &rhs) const {
+        return program_id == rhs.program_id;
+    }
+
+    bool operator!=(const ShaderProgram &rhs) const {
+        return !(rhs == *this);
+    }
+
+    ~ShaderProgram() {
+        if (0 != program_id) {
+            glDeleteProgram(program_id);
+#ifdef DEBUG_ASSERTIONS
+            GLenum err = glGetError();
+            DEBUG_ASSERT(err != GL_INVALID_VALUE);
+#endif
+        }
     }
 };
 
+class Shader {
+public:
+    virtual void bind() = 0;
+    virtual void unbind() = 0;
+
+#ifdef DEBUG_ASSERTIONS
+    inline static bool isInShaderContext() {
+        return getCurrentProgram() != 0;
+    }
+#endif
+};
 
 #endif //ZPG_SHADER_H

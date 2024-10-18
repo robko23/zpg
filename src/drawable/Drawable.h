@@ -11,7 +11,7 @@
 class Drawable {
 public:
 //    virtual void draw(ShaderProgram& shader) = 0;
-    virtual void draw_raw() = 0;
+    virtual void draw() = 0;
 };
 
 #endif //ZPG_DRAWABLE_H

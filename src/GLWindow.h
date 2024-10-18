@@ -10,6 +10,9 @@
 #include "gl_info.h"
 #include <iostream>
 #include <memory>
+#include <list>
+#include <functional>
+#include "ResizeObserver.h"
 
 class GLWindow {
 private:
@@ -22,12 +25,18 @@ private:
     // keys GLFW_KEY_ESCAPE up to GLFW_KEY_KP_0
     uint64_t functionKeys0;
     // keys GLFW_KEY_KP_1 up to GLFW_KEY_MENU (that is 28 used bits, maybe we can fit modifier keys
-    // here as well? tbd
+    // here as well? tbd)
     uint64_t functionKeys1;
 
     double lastTime;
     double delta;
 
+    int currentWidth;
+    int currentHeight;
+
+    std::list<std::shared_ptr<ResizeObserver>> resizeObservers;
+
+    //region Key management
     inline void setKey(int key) {
         if (key <= GLFW_KEY_GRAVE_ACCENT && key >= GLFW_KEY_SPACE) {
             printableKeyStatus |= 1 << (GLFW_KEY_GRAVE_ACCENT - key);
@@ -48,7 +57,7 @@ private:
         }
     }
 
-    inline bool getKey(int key) const {
+    [[nodiscard]] inline bool getKey(int key) const {
         if (key <= GLFW_KEY_GRAVE_ACCENT && key >= GLFW_KEY_SPACE) {
             return (printableKeyStatus & (1 << (GLFW_KEY_GRAVE_ACCENT - key))) != 0;
         } else if (key <= GLFW_KEY_KP_0 && key >= GLFW_KEY_ESCAPE) {
@@ -58,12 +67,21 @@ private:
         }
         return false;
     }
+    //endregion
 
-    explicit GLWindow(GLFWwindow* window) : window(window), printableKeyStatus(0), lastTime(0),
-                                            functionKeys0(0), functionKeys1(0) {
+    explicit GLWindow(GLFWwindow* window, double lastTime, int currentWidth, int currentHeight)
+            : window(window),
+              printableKeyStatus(0),
+              functionKeys0(0),
+              functionKeys1(0),
+              lastTime(lastTime),
+              delta(0),
+              currentWidth(currentWidth),
+              currentHeight(currentHeight),
+              resizeObservers() {
     }
 
-    void key_callback(GLFWwindow* target, int key, int scancode, int action, int mods) {
+    void onKeyPress(GLFWwindow* target, int key, int scancode, int action, int mods) {
         if (GLFW_PRESS == action) {
             setKey(key);
         } else if (GLFW_RELEASE == action) {
@@ -72,24 +90,29 @@ private:
 //        printf("key_callback [%d,%d,%d,%d] \n", key, scancode, action, mods);
     }
 
-    void window_focus_callback(GLFWwindow* target, int focused) {
+    void onFocusChange(GLFWwindow* target, int focused) {
 //        printf("window_focus_callback \n");
     }
 
-    void window_size_callback(GLFWwindow* target, int width, int height) {
-        printf("resize %d, %d \n", width, height);
-        glViewport(0, 0, width, height);
+    void onResize(GLFWwindow* target, int newWidth, int newHeight) {
+        currentWidth = newWidth;
+        currentHeight = newHeight;
+        for (const auto &item: this->resizeObservers) {
+            item->onWindowResize(newWidth, newHeight);
+        }
+        glViewport(0, 0, currentWidth, currentHeight);
     }
 
-    void cursor_callback(GLFWwindow* target, double x, double y) {
-//        printf("cursor_callback \n");
+    void onMouseMove(GLFWwindow* target, double x, double y) {
+//        printf("onMouseMove x=%f, y=%f\n", x, y);
     }
 
-    void button_callback(GLFWwindow* target, int button, int action, int mode) {
+    void onMousePress(GLFWwindow* target, int button, int action, int mode) {
 //        if (action == GLFW_PRESS) printf("button_callback [%d,%d,%d]\n", button, action, mode);
     }
 
 
+    //region Callback registration
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "NullDereference"
 
@@ -105,7 +128,7 @@ private:
                                            auto* self = static_cast<GLWindow*>(glfwGetWindowUserPointer(
                                                    target));
                                            DEBUG_ASSERT_NOT_NULL(self);
-                                           self->key_callback(target, key, scancode, action, mods);
+                                           self->onKeyPress(target, key, scancode, action, mods);
                                        });
             DEBUG_ASSERT(nullptr == prev);
         }
@@ -116,17 +139,17 @@ private:
                                                        auto* self = static_cast<GLWindow*>(glfwGetWindowUserPointer(
                                                                target));
                                                        DEBUG_ASSERT_NOT_NULL(self);
-                                                       self->window_focus_callback(target, focused);
+                                                       self->onFocusChange(target, focused);
                                                    });
             DEBUG_ASSERT(nullptr == prev);
         }
 
         {
-            auto prev = glfwSetWindowSizeCallback(window, [](GLFWwindow* target, int width,
-                                                             int height) -> void {
+            auto prev = glfwSetWindowSizeCallback(window, [](GLFWwindow* target, int newWidth,
+                                                             int newHeight) -> void {
                 auto* self = static_cast<GLWindow*>(glfwGetWindowUserPointer(target));
                 DEBUG_ASSERT_NOT_NULL(self);
-                self->window_size_callback(target, width, height);
+                self->onResize(target, newWidth, newHeight);
             });
             DEBUG_ASSERT(nullptr == prev);
         }
@@ -136,7 +159,7 @@ private:
                                                             double y) -> void {
                 auto* self = static_cast<GLWindow*>(glfwGetWindowUserPointer(target));
                 DEBUG_ASSERT_NOT_NULL(self);
-                self->cursor_callback(target, x, y);
+                self->onMouseMove(target, x, y);
             });
             DEBUG_ASSERT(nullptr == prev)
         }
@@ -148,40 +171,57 @@ private:
                                                        auto* self = static_cast<GLWindow*>(glfwGetWindowUserPointer(
                                                                target));
                                                        DEBUG_ASSERT_NOT_NULL(self);
-                                                       self->button_callback(target, button, action,
-                                                                             mode);
+                                                       self->onMousePress(target, button, action,
+                                                                          mode);
                                                    });
             DEBUG_ASSERT(nullptr == prev);
         }
     }
 
 #pragma clang diagnostic pop
+    //endregion
 
 public:
 
+    //region Copy/move constructors
     GLWindow(GLWindow &other) : window(other.window), printableKeyStatus(other.printableKeyStatus),
-                                lastTime(other.lastTime), functionKeys0(other.functionKeys0),
-                                functionKeys1(other.functionKeys1), delta(other.delta) {
+                                functionKeys0(other.functionKeys0),
+                                functionKeys1(other.functionKeys1), lastTime(other.lastTime),
+                                delta(other.delta),
+                                currentWidth(other.currentWidth),
+                                currentHeight(other.currentHeight),
+                                resizeObservers(other.resizeObservers) {
         other.window = nullptr;
         other.printableKeyStatus = 0;
         other.lastTime = 0;
         other.functionKeys0 = 0;
         other.functionKeys1 = 0;
         other.delta = 0;
+        other.resizeObservers = std::list<std::shared_ptr<ResizeObserver>>();
+        other.window = 0;
+        other.currentHeight = 0;
     }
 
     GLWindow(GLWindow &&other) noexcept: window(other.window),
                                          printableKeyStatus(other.printableKeyStatus),
-                                         lastTime(other.lastTime),
                                          functionKeys0(other.functionKeys0),
-                                         functionKeys1(other.functionKeys1), delta(other.delta) {
+                                         functionKeys1(other.functionKeys1),
+                                         lastTime(other.lastTime),
+                                         delta(other.delta), currentWidth(other.currentWidth),
+                                         currentHeight(other.currentHeight),
+                                         resizeObservers(
+                                                 std::move(other.resizeObservers)) {
         other.window = nullptr;
         other.printableKeyStatus = 0;
         other.lastTime = 0;
         other.functionKeys0 = 0;
         other.functionKeys1 = 0;
         other.delta = 0;
+        other.resizeObservers = std::list<std::shared_ptr<ResizeObserver>>();
+        other.window = nullptr;
+        other.currentHeight = 0;
     }
+    //endregion
 
     [[nodiscard]] inline bool isPressed(int key) const noexcept {
         return getKey(key);
@@ -197,8 +237,10 @@ public:
         return delta;
     }
 
-    static std::optional<std::unique_ptr<GLWindow>> create(const char* title) {
-        GLFWwindow* window = glfwCreateWindow(800, 600, title, nullptr, nullptr);
+    static std::optional<std::shared_ptr<GLWindow>> create(const char* title) {
+        int startWidth = 800;
+        int startHeight = 600;
+        GLFWwindow* window = glfwCreateWindow(startWidth, startHeight, title, nullptr, nullptr);
         if (nullptr == window) {
             std::cerr << "ERROR: could not create GLFW window. are you in glfw context?"
                       << std::endl;
@@ -210,9 +252,13 @@ public:
         glewExperimental = GL_TRUE;
         glewInit();
 
+        double now = glfwGetTime();
+
         DEBUG_ASSERT_NOT_NULL(window);
-        auto instance = std::make_unique<GLWindow>(GLWindow(window));
+        auto instance = std::make_shared<GLWindow>(GLWindow(window, now, startWidth, startHeight));
         instance->registerCallbacks();
+
+        instance->onResize(window, startWidth, startHeight);
 
         glfwMakeContextCurrent(nullptr);
 
@@ -220,6 +266,7 @@ public:
     }
 
     void inContext(const std::function<void()> &func) {
+        DEBUG_ASSERT(nullptr != window)
         if (nullptr != glfwGetCurrentContext()) {
             throw std::logic_error("Double enter to glfw window context");
         }
@@ -228,12 +275,33 @@ public:
         glfwSwapInterval(1);
         glEnable(GL_DEPTH_TEST);
 
-        int width, height;
-        glfwGetFramebufferSize(window, &width, &height);
-        glViewport(0, 0, width, height);
-
         func();
         glfwMakeContextCurrent(nullptr);
+    }
+
+    /*
+     * Check whether this window is current glfw context
+     */
+    [[nodiscard]] inline bool isActive() const {
+        auto current = glfwGetCurrentContext();
+        return current == this->window;
+    }
+
+    void captureCursor() {
+        if (window) {
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+        }
+    }
+
+    void releaseCursor() {
+        if (window) {
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+        }
+    }
+
+    void registerResizeCallback(const std::shared_ptr<ResizeObserver>& observer) {
+        DEBUG_ASSERTF(nullptr != window, "Attempting to register callback on non-existent window")
+        resizeObservers.emplace_back(observer);
     }
 
     void endFrame() noexcept {
@@ -247,7 +315,12 @@ public:
             double now = glfwGetTime();
             delta = now - lastTime;
             lastTime = now;
+            glfwPollEvents();
         }
+    }
+
+    void startFrame() noexcept {
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     }
 
     [[nodiscard]] inline bool shouldClose() const noexcept {
@@ -256,6 +329,14 @@ public:
         } else {
             return true;
         }
+    }
+
+    [[nodiscard]] inline int width() const noexcept {
+        return currentWidth;
+    }
+
+    [[nodiscard]] inline int height() const noexcept {
+        return currentHeight;
     }
 
     ~GLWindow() {

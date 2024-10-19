@@ -13,6 +13,9 @@
 #include <list>
 #include <functional>
 #include "ResizeObserver.h"
+#include "imgui.h"
+#include "imgui_impl_glfw.h"
+#include "imgui_impl_opengl3.h"
 
 class GLWindow {
 private:
@@ -252,6 +255,16 @@ public:
         glewExperimental = GL_TRUE;
         glewInit();
 
+        // Setup Dear ImGui context
+        IMGUI_CHECKVERSION();
+        ImGui::CreateContext();
+        ImGuiIO &io = ImGui::GetIO();
+        (void) io;
+        io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+        io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+        io.ConfigDebugHighlightIdConflicts = true;
+
+
         double now = glfwGetTime();
 
         DEBUG_ASSERT_NOT_NULL(window);
@@ -259,6 +272,14 @@ public:
         instance->registerCallbacks();
 
         instance->onResize(window, startWidth, startHeight);
+
+        // Setup Dear ImGui style
+        ImGui::StyleColorsDark();
+
+        // imgui changes glfw callbacks and chains it to ours,
+        // so we have to init it after registering callbacks
+        ImGui_ImplGlfw_InitForOpenGL(window, true);
+        ImGui_ImplOpenGL3_Init("#version 330");
 
         glfwMakeContextCurrent(nullptr);
 
@@ -299,13 +320,15 @@ public:
         }
     }
 
-    void registerResizeCallback(const std::shared_ptr<ResizeObserver>& observer) {
+    void registerResizeCallback(const std::shared_ptr<ResizeObserver> &observer) {
         DEBUG_ASSERTF(nullptr != window, "Attempting to register callback on non-existent window")
         resizeObservers.emplace_back(observer);
     }
 
     void endFrame() noexcept {
         if (window) {
+            ImGui::Render();
+            ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
             glfwSwapBuffers(window);
 #ifdef DEBUG_ASSERTIONS
             int err = glfwGetError(nullptr);
@@ -321,6 +344,9 @@ public:
 
     void startFrame() noexcept {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
     }
 
     [[nodiscard]] inline bool shouldClose() const noexcept {
@@ -341,6 +367,10 @@ public:
 
     ~GLWindow() {
         if (window) {
+            ImGui_ImplOpenGL3_Shutdown();
+            ImGui_ImplGlfw_Shutdown();
+            ImGui::DestroyContext();
+
             glfwDestroyWindow(window);
         }
     }

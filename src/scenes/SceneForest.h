@@ -14,6 +14,7 @@
 #include "../ShaderLoader.h"
 #include <memory>
 #include "../drawable/Tree.h"
+#include "imgui.h"
 
 class SceneForest {
 private:
@@ -24,6 +25,7 @@ private:
     Camera camera;
     std::shared_ptr<PerspectiveProjection> projection;
     float walkingSpeed = 0.01;
+//    int numOfTrees;
 
 public:
     explicit SceneForest(const std::shared_ptr<GLWindow> &window, const ShaderLoader &loader)
@@ -38,6 +40,11 @@ public:
     }
 
     void render() {
+//        ImGui::Begin("Hello world");
+//        ImGui::Text("Bruh");
+//        ImGui::SliderInt("Num of trees", &numOfTrees, 5, 10);
+//        ImGui::Text("Ay: %d", numOfTrees);
+//        ImGui::End();
         handleKeyInput();
         shaderBasic->bind();
 

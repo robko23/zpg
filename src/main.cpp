@@ -9,6 +9,7 @@
 #include "ShaderLoader.h"
 
 #include "scenes/SceneForest.h"
+#include "scenes/SceneFpsDisplay.h"
 
 int main() {
     GLFWcontext::inContext([]() {
@@ -19,7 +20,7 @@ int main() {
             auto shaderLoader = ShaderLoader("./assets/shaders");
             print_gl_info();
 
-            auto sceneForest = SceneForest(window, shaderLoader);
+            auto sceneForest = SceneFpsDisplay(std::make_unique<SceneForest>(window, shaderLoader));
 
             while (!window->shouldClose()) {
                 if (sceneForest.shouldExit()) {

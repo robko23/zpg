@@ -17,6 +17,9 @@
 #include "imgui.h"
 #include "Scene.h"
 #include "../MathHelpers.h"
+#include <random>
+#include <cmath>
+#include "../drawable/Bush.h"
 
 class SceneForest : public Scene {
 private:
@@ -30,6 +33,7 @@ private:
 
     std::shared_ptr<GLWindow> window;
     Tree tree;
+    Bush bush;
     std::shared_ptr<ShaderBasic> shaderBasic;
     int currentSensitivity;
     int currentWalkingSpeed;
@@ -37,6 +41,14 @@ private:
 
     Camera camera;
     std::shared_ptr<PerspectiveProjection> projection;
+
+    float maxScatterRadius = 10;
+
+    int numberOfTrees = 50;
+    std::vector<glm::mat4> treeTrans;
+
+    int numberOfBushes = 300;
+    std::vector<glm::mat4> bushesTrans;
 
     double lastMouseX = 0;
     double lastMouseY = 0;
@@ -67,6 +79,75 @@ private:
                                              MAX_WALKING_SPEED);
     }
 
+    void renderMenu() {
+        ImGui::Begin("SceneForest controls");
+
+        int prevSens = currentSensitivity;
+        ImGui::SliderInt("Sensitivity", &currentSensitivity, 0, SENSITIVITY_STEPS);
+        if (prevSens != currentSensitivity) {
+            camera.setSensitivity(getSensitivity());
+        }
+        ImGui::Text("Real Sens: %f", getSensitivity());
+
+        int prevWS = currentWalkingSpeed;
+        ImGui::SliderInt("Walking speed", &currentWalkingSpeed, 0, WALKING_SPEED_STEPS);
+        if (prevWS != currentWalkingSpeed) {
+            calculateWalkingSpeed();
+        }
+        ImGui::Text("Real walking speed: %f", walkingSpeedCalc);
+
+        int prevNot = numberOfTrees;
+        ImGui::SliderInt("Number of trees", &numberOfTrees, 10, 200);
+        if (prevNot != numberOfTrees) {
+            treeTrans = scatterObjects(numberOfTrees);
+        }
+
+        int prevNob = numberOfBushes;
+        ImGui::SliderInt("Number of bushes", &numberOfBushes, 50, 2000);
+        if (prevNob != numberOfBushes) {
+            bushesTrans = scatterObjects(numberOfBushes);
+        }
+
+        float prevScatterRadius = maxScatterRadius;
+        ImGui::SliderFloat("Scatter radius", &maxScatterRadius, 3, 50);
+        if (prevScatterRadius != maxScatterRadius) {
+            treeTrans = scatterObjects(numberOfTrees);
+            bushesTrans = scatterObjects(numberOfBushes);
+        }
+
+        if (ImGui::Button("Resume")) {
+            hideMenu();
+        }
+
+        if (ImGui::Button("Exit")) {
+            running = false;
+        }
+        ImGui::End();
+    }
+
+    std::vector<glm::mat4> scatterObjects(int num) {
+        auto trans = std::vector<glm::mat4>(num);
+        std::random_device randomDevice;
+        std::mt19937 generator(randomDevice());
+        std::uniform_real_distribution<> angle_distribution(0, 2*M_PI);
+        std::uniform_real_distribution<> radius_distribution(0,1);
+
+        for (int i = 0; i < num; ++i) {
+            double theta = angle_distribution(generator);
+            double radius = maxScatterRadius * sqrt(radius_distribution(generator));
+            auto x = radius * std::cos(theta);
+            auto z =  radius * std::sin(theta);
+
+            auto modelMatrix = TransformationBuilder()
+                    .rotateY(std::cos(theta))
+                    .moveX(x)
+                    .moveZ(z)
+                    .build();
+            trans.emplace_back(modelMatrix);
+        }
+        return trans;
+    }
+
 public:
     explicit SceneForest(const std::shared_ptr<GLWindow> &window, const ShaderLoader &loader)
             : window(window),
@@ -77,6 +158,8 @@ public:
               projection(
                       std::make_shared<PerspectiveProjection>(window->width(), window->height())) {
         calculateWalkingSpeed();
+        treeTrans = scatterObjects(numberOfTrees);
+        bushesTrans = scatterObjects(numberOfBushes);
         auto shader = ShaderBasic::load(loader).value();
         camera.registerCameraObserver(shader);
         window->registerResizeCallback(projection);
@@ -86,33 +169,7 @@ public:
 
     void render() override {
         if (inMenu) {
-            ImGui::Begin("SceneForest controls");
-
-            int prevSens = currentSensitivity;
-            ImGui::SliderInt("Sensitivity", &currentSensitivity, 0, SENSITIVITY_STEPS);
-            if (prevSens != currentSensitivity) {
-                camera.setSensitivity(getSensitivity());
-            }
-            ImGui::Text("Real Sens: %f", getSensitivity());
-
-            int prevWS = currentWalkingSpeed;
-            ImGui::SliderInt("Walking speed", &currentWalkingSpeed, 0, WALKING_SPEED_STEPS);
-            if (prevWS != currentWalkingSpeed) {
-                calculateWalkingSpeed();
-            }
-            ImGui::Text("Real walking speed: %f", walkingSpeedCalc);
-
-            if (ImGui::Button("Resume")) {
-                hideMenu();
-            }
-
-            if (ImGui::Button("Exit")) {
-                running = false;
-            }
-            ImGui::End();
-        }
-
-        if (inMenu) {
+            renderMenu();
             handleMenuKeyInput();
         } else {
             handleSceneKeyInput();
@@ -122,10 +179,18 @@ public:
 
         shaderBasic->projection(*projection);
 
-        shaderBasic->modelMatrix(glm::mat4(1));
-        tree.draw();
+        for (const auto &item: treeTrans) {
+            shaderBasic->modelMatrix(item);
+            tree.draw();
+        }
+
+        for (const auto &item: bushesTrans) {
+            shaderBasic->modelMatrix(item);
+            bush.draw();
+        }
+
         shaderBasic->unbind();
-        DEBUG_ASSERT(window->isActive());
+        DEBUG_ASSERT(window->isActive())
     }
 
     void handleMenuKeyInput() {

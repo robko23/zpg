@@ -1,6 +1,7 @@
 // This includes must be in this exact order, so put them on top to be sure
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
+#define GLM_ENABLE_EXPERIMENTAL
 
 #include "GLWindow.h"
 #include "GLFWContext.h"
@@ -21,6 +22,9 @@ int main() {
             auto sceneForest = SceneForest(window, shaderLoader);
 
             while (!window->shouldClose()) {
+                if (sceneForest.shouldExit()) {
+                    window->close();
+                }
                 window->startFrame();
                 sceneForest.render();
                 window->endFrame();

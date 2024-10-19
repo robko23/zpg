@@ -27,6 +27,8 @@
 					<Add directory="/home/robko/vsb/ZPG/vendor/glfw/include"/>
 					<Add directory="/home/robko/vsb/ZPG/vendor/glm"/>
 					<Add directory="/home/robko/vsb/ZPG/vendor/glew/include"/>
+					<Add directory="/home/robko/vsb/ZPG/vendor/imgui"/>
+					<Add directory="/home/robko/vsb/ZPG/vendor/imgui/backends"/>
 					<Add directory="/usr/lib/gcc/x86_64-redhat-linux/14/../../../../include/c++/14"/>
 					<Add directory="/usr/lib/gcc/x86_64-redhat-linux/14/../../../../include/c++/14/x86_64-redhat-linux"/>
 					<Add directory="/usr/lib/gcc/x86_64-redhat-linux/14/../../../../include/c++/14/backward"/>
@@ -51,6 +53,8 @@
 					<Add directory="/home/robko/vsb/ZPG/vendor/glfw/include"/>
 					<Add directory="/home/robko/vsb/ZPG/vendor/glm"/>
 					<Add directory="/home/robko/vsb/ZPG/vendor/glew/include"/>
+					<Add directory="/home/robko/vsb/ZPG/vendor/imgui"/>
+					<Add directory="/home/robko/vsb/ZPG/vendor/imgui/backends"/>
 					<Add directory="/usr/lib/gcc/x86_64-redhat-linux/14/../../../../include/c++/14"/>
 					<Add directory="/usr/lib/gcc/x86_64-redhat-linux/14/../../../../include/c++/14/x86_64-redhat-linux"/>
 					<Add directory="/usr/lib/gcc/x86_64-redhat-linux/14/../../../../include/c++/14/backward"/>
@@ -448,6 +452,12 @@
 		<Unit filename="/home/robko/vsb/ZPG/src/GLWindow.h">
 			<Option target="zpg"/>
 		</Unit>
+		<Unit filename="/home/robko/vsb/ZPG/src/Projection.h">
+			<Option target="zpg"/>
+		</Unit>
+		<Unit filename="/home/robko/vsb/ZPG/src/ResizeObserver.h">
+			<Option target="zpg"/>
+		</Unit>
 		<Unit filename="/home/robko/vsb/ZPG/src/ShaderLoader.h">
 			<Option target="zpg"/>
 		</Unit>
@@ -505,10 +515,10 @@
 		<Unit filename="/home/robko/vsb/ZPG/src/scenes/SceneForest.h">
 			<Option target="zpg"/>
 		</Unit>
-		<Unit filename="/home/robko/vsb/ZPG/src/shaders/BasicShader.h">
+		<Unit filename="/home/robko/vsb/ZPG/src/shaders/Shader.h">
 			<Option target="zpg"/>
 		</Unit>
-		<Unit filename="/home/robko/vsb/ZPG/src/shaders/Shader.h">
+		<Unit filename="/home/robko/vsb/ZPG/src/shaders/ShaderBasic.h">
 			<Option target="zpg"/>
 		</Unit>
 		<Unit filename="/home/robko/vsb/ZPG/vendor/glew/include/GL/glew.h">
@@ -2062,6 +2072,51 @@
 		</Unit>
 		<Unit filename="/home/robko/vsb/ZPG/vendor/glm/util/glm.natvis">
 			<Option target="glm"/>
+		</Unit>
+		<Unit filename="/home/robko/vsb/ZPG/vendor/imgui/backends/imgui_impl_glfw.cpp">
+			<Option target="zpg"/>
+		</Unit>
+		<Unit filename="/home/robko/vsb/ZPG/vendor/imgui/backends/imgui_impl_glfw.h">
+			<Option target="zpg"/>
+		</Unit>
+		<Unit filename="/home/robko/vsb/ZPG/vendor/imgui/backends/imgui_impl_opengl3.cpp">
+			<Option target="zpg"/>
+		</Unit>
+		<Unit filename="/home/robko/vsb/ZPG/vendor/imgui/backends/imgui_impl_opengl3.h">
+			<Option target="zpg"/>
+		</Unit>
+		<Unit filename="/home/robko/vsb/ZPG/vendor/imgui/imconfig.h">
+			<Option target="zpg"/>
+		</Unit>
+		<Unit filename="/home/robko/vsb/ZPG/vendor/imgui/imgui.cpp">
+			<Option target="zpg"/>
+		</Unit>
+		<Unit filename="/home/robko/vsb/ZPG/vendor/imgui/imgui.h">
+			<Option target="zpg"/>
+		</Unit>
+		<Unit filename="/home/robko/vsb/ZPG/vendor/imgui/imgui_demo.cpp">
+			<Option target="zpg"/>
+		</Unit>
+		<Unit filename="/home/robko/vsb/ZPG/vendor/imgui/imgui_draw.cpp">
+			<Option target="zpg"/>
+		</Unit>
+		<Unit filename="/home/robko/vsb/ZPG/vendor/imgui/imgui_internal.h">
+			<Option target="zpg"/>
+		</Unit>
+		<Unit filename="/home/robko/vsb/ZPG/vendor/imgui/imgui_tables.cpp">
+			<Option target="zpg"/>
+		</Unit>
+		<Unit filename="/home/robko/vsb/ZPG/vendor/imgui/imgui_widgets.cpp">
+			<Option target="zpg"/>
+		</Unit>
+		<Unit filename="/home/robko/vsb/ZPG/vendor/imgui/imstb_rectpack.h">
+			<Option target="zpg"/>
+		</Unit>
+		<Unit filename="/home/robko/vsb/ZPG/vendor/imgui/imstb_textedit.h">
+			<Option target="zpg"/>
+		</Unit>
+		<Unit filename="/home/robko/vsb/ZPG/vendor/imgui/imstb_truetype.h">
+			<Option target="zpg"/>
 		</Unit>
 		<Unit filename="/home/robko/vsb/ZPG/CMakeLists.txt">
 			<Option virtualFolder="CMake Files\"/>

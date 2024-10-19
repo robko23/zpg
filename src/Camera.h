@@ -9,14 +9,22 @@
 #include "CameraObserver.h"
 #include "glm/vec3.hpp"
 #include "glm/gtc/matrix_transform.hpp"
+#include <memory>
 
 class Camera {
 private:
     std::deque<std::shared_ptr<CameraObserver>> observers;
-    glm::vec3 m_position;
+    glm::vec3 m_eye;
     glm::vec3 m_target;
-    glm::vec3 m_up = glm::vec3(1);
-    glm::mat4 camera;
+    glm::vec3 m_up;
+    double yaw = 0;
+    double pitch = 0;
+    double sensitivity;
+    glm::vec2 prev_pos = glm::vec2(0);
+    bool firstMouse = true;
+    glm::vec<2, double> prevPos = glm::vec2(0);
+
+    glm::mat4 camera = glm::mat4(1);
 
     void handleChange() {
         recalculate();
@@ -26,41 +34,66 @@ private:
     }
 
     void recalculate() {
-        auto direction = glm::normalize(m_position - m_target);
-        auto right = glm::normalize(glm::cross(m_up, direction));
-        auto up = glm::cross(direction, right);
-        camera = glm::lookAt(m_target, right, up);
+        camera = glm::lookAt(m_eye, m_eye + m_target, m_up);
     }
 
 public:
-    explicit Camera() : observers(), m_position(0, 0, 3), m_target(1), camera() {
+    explicit Camera(double sensitivity, glm::vec3 initialPosition = glm::vec3(-3, 3, -3))
+            : observers(), m_eye(initialPosition), m_target(0), m_up(0, 1, 0),
+              sensitivity(sensitivity) {
         recalculate();
     }
 
-    explicit Camera(glm::vec3 position, glm::vec3 target)
-            : observers(), m_position(position), m_target(target), camera() {
+    void moveForward(float speed) {
+        m_eye += speed * m_target;
+        handleChange();
+    }
+
+    void moveBack(float speed) {
+        m_eye -= speed * m_target;
+        handleChange();
+    }
+
+    void moveLeft(float speed) {
+        m_eye -= (glm::normalize(glm::cross(m_target, m_up))) * speed;
+        handleChange();
+    }
+
+    void moveRight(float speed) {
+        m_eye += (glm::normalize(glm::cross(m_target, m_up))) * speed;
+        handleChange();
+    }
+
+    void setSensitivity(double val) {
+        sensitivity = val;
+    }
+
+    void onMouseMove(double mouseX, double mouseY) {
+        if (firstMouse) {
+            prevPos = glm::vec2(mouseX, mouseY);
+            firstMouse = false;
+        } else {
+            double xOffset = mouseX - prev_pos.x;
+            double yOffset = prev_pos.y - mouseY;
+            prev_pos = glm::vec2(mouseX, mouseY);
+            yaw += xOffset * sensitivity;
+            pitch += yOffset * sensitivity;
+
+            if (pitch > 89.0f) {
+                pitch = 89.0f;
+            } else if (pitch < -89.0f) {
+                pitch = -89.0f;
+            }
+            auto direction = glm::vec<3, double>(0);
+
+            direction.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
+            direction.y = sin(glm::radians(pitch));
+            direction.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
+            m_target = glm::normalize(direction);
+        }
         recalculate();
-    }
-
-    void moveForward(float howMuch) {
-        m_position += glm::vec3(howMuch, 0, 0);
-//        position[0] += howMuch;
         handleChange();
     }
-
-    void moveBack(float howMuch) {
-        m_position[0] -= howMuch;
-        handleChange();
-    }
-
-    void moveLeft(float howMuch) {
-        m_position[1] -= howMuch;
-    }
-
-    void moveRight(float howMuch) {
-        m_position[1] += howMuch;
-    }
-
 
     void registerCameraObserver(const std::shared_ptr<CameraObserver> &observer) noexcept {
         observers.emplace_back(observer);

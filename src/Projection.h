@@ -28,7 +28,7 @@ private:
 
     void recalculate() {
         float aspectRatio = static_cast<float>(screenWidth) / static_cast<float>(screenHeight);
-        projection = glm::perspective(fov, aspectRatio, minDistance, maxDistance);
+        projection = glm::perspective(glm::radians(fov), aspectRatio, minDistance, maxDistance);
     }
 
 public:
@@ -49,8 +49,9 @@ public:
     }
 
     void onWindowResize(int width, int height) override {
-        screenHeight = width;
         screenHeight = height;
+        screenWidth = width;
+        recalculate();
     }
 
     [[nodiscard]] glm::mat4 getProjectionMatrix() const override {

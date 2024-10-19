@@ -8,6 +8,7 @@
 #include <memory>
 #include "glm/mat4x4.hpp"
 #include "../Projection.h"
+#include <glm/gtx/string_cast.hpp>
 
 class ShaderBasic : public CameraObserver, public Shader {
 private:

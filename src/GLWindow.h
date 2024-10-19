@@ -37,6 +37,9 @@ private:
     int currentWidth;
     int currentHeight;
 
+    double currentMouseX;
+    double currentMouseY;
+
     std::list<std::shared_ptr<ResizeObserver>> resizeObservers;
 
     //region Key management
@@ -81,9 +84,10 @@ private:
               delta(0),
               currentWidth(currentWidth),
               currentHeight(currentHeight),
-              resizeObservers() {
+              currentMouseX(0), currentMouseY(0), resizeObservers() {
     }
 
+    //region Callbacks
     void onKeyPress(GLFWwindow* target, int key, int scancode, int action, int mods) {
         if (GLFW_PRESS == action) {
             setKey(key);
@@ -107,12 +111,14 @@ private:
     }
 
     void onMouseMove(GLFWwindow* target, double x, double y) {
-//        printf("onMouseMove x=%f, y=%f\n", x, y);
+        currentMouseX = x;
+        currentMouseY = y;
     }
 
     void onMousePress(GLFWwindow* target, int button, int action, int mode) {
 //        if (action == GLFW_PRESS) printf("button_callback [%d,%d,%d]\n", button, action, mode);
     }
+    //endregion
 
 
     //region Callback registration
@@ -193,6 +199,8 @@ public:
                                 delta(other.delta),
                                 currentWidth(other.currentWidth),
                                 currentHeight(other.currentHeight),
+                                currentMouseX(other.currentMouseX),
+                                currentMouseY(other.currentMouseY),
                                 resizeObservers(other.resizeObservers) {
         other.window = nullptr;
         other.printableKeyStatus = 0;
@@ -201,7 +209,7 @@ public:
         other.functionKeys1 = 0;
         other.delta = 0;
         other.resizeObservers = std::list<std::shared_ptr<ResizeObserver>>();
-        other.window = 0;
+        other.window = nullptr;
         other.currentHeight = 0;
     }
 
@@ -212,8 +220,9 @@ public:
                                          lastTime(other.lastTime),
                                          delta(other.delta), currentWidth(other.currentWidth),
                                          currentHeight(other.currentHeight),
-                                         resizeObservers(
-                                                 std::move(other.resizeObservers)) {
+                                         currentMouseX(other.currentMouseX),
+                                         currentMouseY(other.currentMouseY),
+                                         resizeObservers(std::move(other.resizeObservers)) {
         other.window = nullptr;
         other.printableKeyStatus = 0;
         other.lastTime = 0;
@@ -320,6 +329,12 @@ public:
         }
     }
 
+    void close() {
+        if (window) {
+            glfwSetWindowShouldClose(window, GL_TRUE);
+        }
+    }
+
     void registerResizeCallback(const std::shared_ptr<ResizeObserver> &observer) {
         DEBUG_ASSERTF(nullptr != window, "Attempting to register callback on non-existent window")
         resizeObservers.emplace_back(observer);
@@ -363,6 +378,14 @@ public:
 
     [[nodiscard]] inline int height() const noexcept {
         return currentHeight;
+    }
+
+    [[nodiscard]] inline double mouseX() const noexcept {
+        return currentMouseX;
+    }
+
+    [[nodiscard]] inline double mouseY() const noexcept {
+        return currentMouseY;
     }
 
     ~GLWindow() {

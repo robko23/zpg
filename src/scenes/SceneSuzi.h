@@ -14,15 +14,17 @@ class SceneSuzi : public Scene {
     Suzi suzi;
     std::shared_ptr<GLWindow> window;
     std::shared_ptr<ShaderBasic> shaderBasic;
-    std::shared_ptr<Projection> projection;
+    std::shared_ptr<PerspectiveProjection> projection;
     Camera camera;
 
     bool running = true;
-    bool remount = true;
+    bool inMenu = true;
     double lastMouseX = 0;
     double lastMouseY = 0;
 
     const float walkingSpeed = 0.07;
+
+    float fov = 60;
 
     void handleSceneKeyInput() {
         if (window->isPressed(GLFW_KEY_W)) {
@@ -38,8 +40,13 @@ class SceneSuzi : public Scene {
             camera.moveRight(walkingSpeed);
         }
         if (window->isPressedAndClear(GLFW_KEY_ESCAPE)) {
-            window->releaseCursor();
-            running = false;
+            showMenu();
+        }
+    }
+
+    void handleMenuKeyInput() {
+        if (window->isPressedAndClear(GLFW_KEY_ESCAPE)) {
+            hideMenu();
         }
     }
 
@@ -51,6 +58,36 @@ class SceneSuzi : public Scene {
         }
     }
 
+    void showMenu() {
+        window->releaseCursor();
+        inMenu = true;
+    }
+
+    void hideMenu() {
+        window->captureCursor();
+        inMenu = false;
+    }
+
+    void renderMenu() {
+        ImGui::Begin("SceneSuzi settings");
+
+        float lastFov = fov;
+        ImGui::SliderFloat("FOV", &fov, 30, 130);
+        if (lastFov != fov) {
+            projection->setFov(fov);
+        }
+
+        if (ImGui::Button("Resume")) {
+            hideMenu();
+        }
+
+        if (ImGui::Button("Exit")) {
+            running = false;
+        }
+
+        ImGui::End();
+    }
+
 public:
     explicit SceneSuzi(const std::shared_ptr<GLWindow> &window, const ShaderLoader &loader)
             : suzi(), window(window),
@@ -58,18 +95,20 @@ public:
         auto shader = ShaderBasic::load(loader).value();
         camera.registerCameraObserver(shader);
         shaderBasic = std::move(shader);
-        auto perspectiveProjection = std::make_shared<PerspectiveProjection>(window->width(), window->height());
+        auto perspectiveProjection = std::make_shared<PerspectiveProjection>(window->width(),
+                                                                             window->height());
         window->registerResizeCallback(perspectiveProjection);
         projection = perspectiveProjection;
     }
 
     void render() override {
-        if (remount) {
-            window->captureCursor();
-            remount = false;
+        if (inMenu) {
+            handleMenuKeyInput();
+            renderMenu();
+        } else {
+            handleSceneKeyInput();
+            handleMouseInput();
         }
-        handleSceneKeyInput();
-        handleMouseInput();
         shaderBasic->bind();
         shaderBasic->projection(*projection);
         shaderBasic->modelMatrix(glm::mat4(1));
@@ -81,7 +120,6 @@ public:
         bool shouldExit = !running;
         if (shouldExit) {
             running = true;
-            remount = true;
         }
         return shouldExit;
     }

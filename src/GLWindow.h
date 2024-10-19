@@ -12,6 +12,7 @@
 #include <memory>
 #include <list>
 #include <functional>
+#include <algorithm>
 #include "ResizeObserver.h"
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
@@ -94,7 +95,6 @@ private:
         } else if (GLFW_RELEASE == action) {
             clearKey(key);
         }
-//        printf("key_callback [%d,%d,%d,%d] \n", key, scancode, action, mods);
     }
 
     void onFocusChange(GLFWwindow* target, int focused) {
@@ -338,6 +338,15 @@ public:
     void registerResizeCallback(const std::shared_ptr<ResizeObserver> &observer) {
         DEBUG_ASSERTF(nullptr != window, "Attempting to register callback on non-existent window")
         resizeObservers.emplace_back(observer);
+    }
+
+    bool unregisterResizeCallback(const std::shared_ptr<ResizeObserver> &observer) {
+        auto it = std::find(resizeObservers.begin(), resizeObservers.end(), observer);
+        if (it != resizeObservers.end()) {
+            resizeObservers.erase(it);
+            return true;
+        }
+        return false;
     }
 
     void endFrame() noexcept {

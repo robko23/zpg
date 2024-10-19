@@ -58,10 +58,3 @@ public:
         return projection;
     }
 };
-
-class OrthographicProjection: public Projection {
-public:
-    [[nodiscard]] glm::mat4 getProjectionMatrix() const override {
-        return glm::mat4(1); // NOLINT(*-return-braced-init-list)
-    }
-};

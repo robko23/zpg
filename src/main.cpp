@@ -10,6 +10,8 @@
 
 #include "scenes/SceneForest.h"
 #include "scenes/SceneFpsDisplay.h"
+#include "scenes/SceneSwitcher.h"
+#include "scenes/SceneSuzi.h"
 
 int main() {
     GLFWcontext::inContext([]() {
@@ -19,15 +21,23 @@ int main() {
         window->inContext([&window]() -> void {
             auto shaderLoader = ShaderLoader("./assets/shaders");
             print_gl_info();
+            auto forest = std::make_shared<SceneForest>(window, shaderLoader);
+            auto forest2 = std::make_shared<SceneForest>(window, shaderLoader);
+            auto fps = std::make_shared<SceneFpsDisplay>(std::move(forest));
+            auto suziScene = std::make_shared<SceneSuzi>(window, shaderLoader);
 
-            auto sceneForest = SceneFpsDisplay(std::make_unique<SceneForest>(window, shaderLoader));
+            auto mainScene = SceneSwitcher();
+            mainScene.addScene(forest2);
+            mainScene.addScene(fps);
+            mainScene.addScene(suziScene);
+
 
             while (!window->shouldClose()) {
-                if (sceneForest.shouldExit()) {
+                if (mainScene.shouldExit()) {
                     window->close();
                 }
                 window->startFrame();
-                sceneForest.render();
+                mainScene.render();
                 window->endFrame();
             }
         });

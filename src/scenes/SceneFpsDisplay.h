@@ -9,14 +9,14 @@
 #include <chrono>
 
 class SceneFpsDisplay : public Scene {
-    std::unique_ptr<Scene> s;
+    std::shared_ptr<Scene> scene;
     double minFps = 999;
 public:
-    explicit SceneFpsDisplay(std::unique_ptr<Scene> s) : s(std::move(s)) {}
+    explicit SceneFpsDisplay(const std::shared_ptr<Scene>& scene) : scene(scene) {}
 
     void render() override {
         auto start = std::chrono::high_resolution_clock::now();
-        s->render();
+        scene->render();
         auto stop = std::chrono::high_resolution_clock::now();
         auto diff = stop - start;
         auto duration_ms = std::chrono::duration_cast<std::chrono::milliseconds>(diff).count();
@@ -31,7 +31,11 @@ public:
         ImGui::End();
     }
 
-    [[nodiscard]] bool shouldExit() const override {
-        return s->shouldExit();
+    [[nodiscard]] bool shouldExit() override {
+        return scene->shouldExit();
+    }
+
+    const char* getId() override {
+        return "fps-display";
     }
 };

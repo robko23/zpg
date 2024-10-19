@@ -8,7 +8,9 @@ class Scene {
 public:
     virtual void render() = 0;
 
-    virtual bool shouldExit() const = 0;
+    virtual bool shouldExit() = 0;
+
+    virtual const char* getId() = 0;
 
     virtual ~Scene() = default;
 };

@@ -125,7 +125,7 @@ private:
         ImGui::End();
     }
 
-    std::vector<glm::mat4> scatterObjects(int num) {
+    std::vector<glm::mat4> scatterObjects(int num) const {
         auto trans = std::vector<glm::mat4>(num);
         std::random_device randomDevice;
         std::mt19937 generator(randomDevice());
@@ -146,6 +146,38 @@ private:
             trans.emplace_back(modelMatrix);
         }
         return trans;
+    }
+
+    void handleMenuKeyInput() {
+        if (window->isPressedAndClear(GLFW_KEY_ESCAPE)) {
+            hideMenu();
+        }
+    }
+
+    void handleSceneKeyInput() {
+        if (window->isPressed(GLFW_KEY_W)) {
+            camera.moveForward(walkingSpeedCalc);
+        }
+        if (window->isPressed(GLFW_KEY_S)) {
+            camera.moveBack(walkingSpeedCalc);
+        }
+        if (window->isPressed(GLFW_KEY_A)) {
+            camera.moveLeft(walkingSpeedCalc);
+        }
+        if (window->isPressed(GLFW_KEY_D)) {
+            camera.moveRight(walkingSpeedCalc);
+        }
+        if (window->isPressedAndClear(GLFW_KEY_ESCAPE)) {
+            showMenu();
+        }
+    }
+
+    void handleMouseInput() {
+        if (window->mouseX() != lastMouseX || window->mouseY() != lastMouseY) {
+            camera.onMouseMove(window->mouseX(), window->mouseY());
+            lastMouseX = window->mouseX();
+            lastMouseY = window->mouseY();
+        }
     }
 
 public:
@@ -190,42 +222,17 @@ public:
         }
 
         shaderBasic->unbind();
-        DEBUG_ASSERT(window->isActive())
     }
 
-    void handleMenuKeyInput() {
-        if (window->isPressedAndClear(GLFW_KEY_ESCAPE)) {
-            hideMenu();
+    [[nodiscard]] bool shouldExit() override {
+        bool shouldExit = !running;
+        if (shouldExit) {
+            running = true;
         }
+        return shouldExit;
     }
 
-    void handleSceneKeyInput() {
-        if (window->isPressed(GLFW_KEY_W)) {
-            camera.moveForward(walkingSpeedCalc);
-        }
-        if (window->isPressed(GLFW_KEY_S)) {
-            camera.moveBack(walkingSpeedCalc);
-        }
-        if (window->isPressed(GLFW_KEY_A)) {
-            camera.moveLeft(walkingSpeedCalc);
-        }
-        if (window->isPressed(GLFW_KEY_D)) {
-            camera.moveRight(walkingSpeedCalc);
-        }
-        if (window->isPressedAndClear(GLFW_KEY_ESCAPE)) {
-            showMenu();
-        }
-    }
-
-    void handleMouseInput() {
-        if (window->mouseX() != lastMouseX || window->mouseY() != lastMouseY) {
-            camera.onMouseMove(window->mouseX(), window->mouseY());
-            lastMouseX = window->mouseX();
-            lastMouseY = window->mouseY();
-        }
-    }
-
-    [[nodiscard]] bool shouldExit() const override {
-        return !running;
+    const char* getId() override {
+        return "forest";
     }
 };

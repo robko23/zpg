@@ -191,6 +191,31 @@ public:
 #endif
     }
 
+    void bindParam(const char* name, const glm::mat3 &mat) const {
+        DEBUG_ASSERT(this->isBound());
+
+        GLint id = glGetUniformLocation(program_id, name);
+        DEBUG_ASSERTF(-1 != id, "Parameter %s may not exist in the shader", name);
+
+#ifdef DEBUG_ASSERTIONS
+        {
+            GLenum err = glGetError();
+            DEBUG_ASSERT(err != GL_INVALID_VALUE);
+            DEBUG_ASSERT(err != GL_INVALID_OPERATION);
+        };
+#endif
+
+        glUniformMatrix3fv(id, 1, GL_FALSE, &mat[0][0]);
+
+#ifdef DEBUG_ASSERTIONS
+        {
+            GLenum err = glGetError();
+            DEBUG_ASSERT(err != GL_INVALID_VALUE);
+            DEBUG_ASSERT(err != GL_INVALID_OPERATION);
+        }
+#endif
+    }
+
     bool operator==(const ShaderProgram &rhs) const {
         return program_id == rhs.program_id;
     }

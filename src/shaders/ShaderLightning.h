@@ -10,12 +10,12 @@
 #include "../Projection.h"
 #include <glm/gtx/string_cast.hpp>
 
-class ShaderBasic : public CameraObserver, public Shader {
+class ShaderLightning : public CameraObserver, public Shader {
 private:
     ShaderProgram program;
     glm::mat4 currentCamera;
 
-    explicit ShaderBasic(ShaderProgram program) : program(std::move(program)),
+    explicit ShaderLightning(ShaderProgram program) : program(std::move(program)),
                                                   currentCamera(glm::mat4(1)) {
     }
 
@@ -25,18 +25,18 @@ private:
     }
 
 public:
-    ShaderBasic(const ShaderBasic &other) = delete;
+    ShaderLightning(const ShaderLightning &other) = delete;
 
-    ShaderBasic(ShaderBasic &&other) noexcept: program(std::move(other.program)),
+    ShaderLightning(ShaderLightning &&other) noexcept: program(std::move(other.program)),
                                                currentCamera(other.currentCamera)
                                                {}
 
-    static std::optional<std::shared_ptr<ShaderBasic>> load(const ShaderLoader &loader) {
-        auto maybeVertexShader = loader.loadVertex("basic.glsl");
+    static std::optional<std::shared_ptr<ShaderLightning>> load(const ShaderLoader &loader) {
+        auto maybeVertexShader = loader.loadVertex("lightning.glsl");
         if (!maybeVertexShader.has_value()) {
             return {};
         }
-        auto maybeFragmentShader = loader.loadFragment("basic.glsl");
+        auto maybeFragmentShader = loader.loadFragment("lightning.glsl");
         if (!maybeFragmentShader.has_value()) {
             return {};
         }
@@ -47,8 +47,8 @@ public:
             return {};
         }
 
-        auto inner = ShaderBasic(maybeShaderProgram.value());
-        auto self = std::make_shared<ShaderBasic>(std::move(inner));
+        auto inner = ShaderLightning(maybeShaderProgram.value());
+        auto self = std::make_shared<ShaderLightning>(std::move(inner));
         return std::move(self);
     }
 
@@ -69,6 +69,7 @@ public:
     void bind() override {
         program.bind();
         updateCamera();
+        program.bindParam("normalMatrix", glm::mat3(1));
     }
 
     void unbind() override {
@@ -76,7 +77,7 @@ public:
     }
 
     bool eq(CameraObserver &other) override {
-        auto otherShader = dynamic_cast<ShaderBasic*>(&other);
+        auto otherShader = dynamic_cast<ShaderLightning*>(&other);
         if (nullptr == otherShader) {
             return false;
         }

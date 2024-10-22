@@ -24,17 +24,17 @@ private:
     bool firstMouse = true;
     glm::vec<2, double> prevPos = glm::vec2(0);
 
-    glm::mat4 camera = glm::mat4(1);
+    glm::mat4 viewMatrix = glm::mat4(1);
 
     void handleChange() {
         recalculate();
         for (const auto &item: observers) {
-            item->onCameraChange(camera);
+            item->onCameraChange(viewMatrix);
         }
     }
 
     void recalculate() {
-        camera = glm::lookAt(m_eye, m_eye + m_target, m_up);
+        viewMatrix = glm::lookAt(m_eye, m_eye + m_target, m_up);
     }
 
 public:

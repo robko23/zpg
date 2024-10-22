@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.10)
 project(zpg)
 
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 23)
 
 file(GLOB_RECURSE SOURCES "src/**.cpp" "src/**.hpp" "src/**.h" "src/**.c")
 
@@ -44,4 +44,4 @@ add_executable(zpg ${SOURCES} ${IMGUI_SOURCES})
 
 target_include_directories(zpg PRIVATE vendor/imgui vendor/imgui/backends )
 
-target_link_libraries(zpg PRIVATE glfw ${OPENGL_gl_LIBRARY} glew)
+target_link_libraries(zpg PRIVATE glfw ${OPENGL_gl_LIBRARY} glew stdc++_libbacktrace)

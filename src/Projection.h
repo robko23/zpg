@@ -22,7 +22,7 @@ private:
     }
 };
 
-class PerspectiveProjection : public Observable<WindowSize>, public Subject<ProjectionMatrix> {
+class PerspectiveProjection : public Observer<WindowSize>, public Observable<ProjectionMatrix> {
 private:
     float fov = 60;
     int screenWidth;
@@ -46,7 +46,7 @@ private:
     }
 
 public:
-    PerspectiveProjection() : Subject<ProjectionMatrix>(ProjectionMatrix::_default()),
+    PerspectiveProjection() : Observable<ProjectionMatrix>(ProjectionMatrix::_default()),
                               screenWidth(0),
                               screenHeight(0), projectionMatrix(ProjectionMatrix::_default()) {
     }

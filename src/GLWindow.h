@@ -23,7 +23,7 @@ struct WindowSize {
     int height;
 };
 
-class GLWindow : public Subject<WindowSize> {
+class GLWindow : public Observable<WindowSize> {
 private:
     GLFWwindow* window;
     // Normal printable keys defined in glfw3.h from GLFW_KEY_SPACE up to GLFW_KEY_GRAVE_ACCENT
@@ -113,7 +113,7 @@ private:
     //endregion
 
     explicit GLWindow(GLFWwindow* window, double lastTime, int currentWidth, int currentHeight)
-            : Subject<WindowSize>(WindowSize{.width = currentWidth, .height = currentHeight}),
+            : Observable<WindowSize>(WindowSize{.width = currentWidth, .height = currentHeight}),
               window(window),
               printableKeyStatus(0),
               functionKeys0(0),
@@ -234,7 +234,7 @@ private:
 public:
 
     //region Copy/move constructors
-    GLWindow(GLWindow &other) : Subject<WindowSize>(
+    GLWindow(GLWindow &other) : Observable<WindowSize>(
             WindowSize{.width = other.currentWidth, .height = other.currentHeight}),
                                 window(other.window), printableKeyStatus(other.printableKeyStatus),
                                 functionKeys0(other.functionKeys0),
@@ -260,7 +260,7 @@ public:
         other.currentHeight = 0;
     }
 
-    GLWindow(GLWindow &&other) noexcept: Subject(
+    GLWindow(GLWindow &&other) noexcept: Observable(
             WindowSize{.width = other.currentWidth, .height = other.currentHeight}),
                                          window(other.window),
                                          printableKeyStatus(other.printableKeyStatus),

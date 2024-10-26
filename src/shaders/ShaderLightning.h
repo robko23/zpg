@@ -12,7 +12,7 @@
 
 class ShaderLightning
         : public Shader,
-          public Observable<ViewMatrix>, public Observable<ProjectionMatrix> {
+          public Observer<ViewMatrix>, public Observer<ProjectionMatrix> {
 private:
     ShaderProgram program;
     ViewMatrix viewMatrix;

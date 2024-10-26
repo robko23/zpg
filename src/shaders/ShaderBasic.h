@@ -11,7 +11,7 @@
 #include "../Observer.h"
 
 class ShaderBasic
-        : public Observable<ViewMatrix>, public Observable<ProjectionMatrix>, public Shader {
+        : public Observer<ViewMatrix>, public Observer<ProjectionMatrix>, public Shader {
 private:
     ShaderProgram program;
     ViewMatrix viewMatrix;

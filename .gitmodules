@@ -7,3 +7,6 @@
 [submodule "vendor/imgui"]
 	path = vendor/imgui
 	url = https://github.com/ocornut/imgui.git
+[submodule "vendor/backward"]
+	path = vendor/backward
+	url = https://github.com/bombela/backward-cpp.git

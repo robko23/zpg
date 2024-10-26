@@ -9,8 +9,17 @@
 #include <cstdio>
 #include <stacktrace>
 #include <iostream>
+#define BACKWARD_HAS_BFD 1
+#include <backward.hpp>
 
 #define DEBUG_ASSERTIONS
+
+void printCurrentStacktrace() {
+    backward::StackTrace st;
+    st.load_here(32);
+    backward::Printer p;
+    p.print(st);
+}
 
 #ifdef DEBUG_ASSERTIONS
 
@@ -20,7 +29,7 @@
             fprintf(stderr, \
                     "Assertion failed: %s. In file: %s, line %d\n", \
             #x, __FILE__, __LINE__); \
-            std::cerr << "Stacktrace:" << std::endl << std::stacktrace::current() << std::endl; \
+            printCurrentStacktrace(); \
             raise(SIGABRT); \
         } \
     }
@@ -32,7 +41,7 @@
                     "Assertion failed: %s. In file: %s, line %d\n", \
             #x, __FILE__, __LINE__); \
             fprintf(stderr, __VA_ARGS__); \
-            std::cerr << "Stacktrace:" << std::endl << std::stacktrace::current() << std::endl; \
+            printCurrentStacktrace(); \
             raise(SIGABRT); \
         } \
     }
@@ -43,7 +52,7 @@
             fprintf(stderr, \
                     "Assertion failed. %s is NULL. In file: %s, line %d\n", \
             #x, __FILE__, __LINE__); \
-            std::cerr << "Stacktrace:" << std::endl << std::stacktrace::current() << std::endl; \
+            printCurrentStacktrace(); \
             raise(SIGABRT); \
         } \
     }

@@ -8,7 +8,7 @@ file(GLOB_RECURSE SOURCES "src/**.cpp" "src/**.hpp" "src/**.h" "src/**.c")
 file(GLOB IMGUI_SOURCES "vendor/imgui/*.h" ,
         "vendor/imgui/*.cpp" ,
         "vendor/imgui/backends/imgui_impl_opengl3.h" ,
-        "vendor/imgui/backends/imgui_impl_opengl3.cpp",
+        "vendor/imgui/backends/imgui_impl_opengl3.cpp" ,
         "vendor/imgui/backends/imgui_impl_glfw.h" ,
         "vendor/imgui/backends/imgui_impl_glfw.cpp" ,
 )
@@ -31,17 +31,18 @@ endif ()
 add_subdirectory(vendor/glm)
 add_subdirectory(vendor/glfw)
 add_subdirectory(vendor/glew/build/cmake)
+add_subdirectory(vendor/backward)
 
 include_directories(vendor/glfw/include)
 include_directories(vendor/glm/)
 include_directories(vendor/glew/include)
 
 if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-long-long -pedantic -Wno-unknown-pragmas -Wno-sign-compare")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-long-long -pedantic -Wno-unknown-pragmas -Wno-sign-compare -g")
 endif ()
 
 add_executable(zpg ${SOURCES} ${IMGUI_SOURCES})
 
 target_include_directories(zpg PRIVATE vendor/imgui vendor/imgui/backends )
 
-target_link_libraries(zpg PRIVATE glfw ${OPENGL_gl_LIBRARY} glew stdc++_libbacktrace)
+target_link_libraries(zpg PRIVATE glfw ${OPENGL_gl_LIBRARY} glew Backward::Interface bfd dl)

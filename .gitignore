@@ -1,3 +1,6 @@
+imgui.ini
+vendor/glew/build/cmake/glew.cbp
+zpg.cbp
 lib
 vendor/glew/build/cmake/glew.pc
 build.ninja

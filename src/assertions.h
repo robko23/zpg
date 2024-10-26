@@ -40,7 +40,8 @@ void printCurrentStacktrace() {
             fprintf(stderr, \
                     "Assertion failed: %s. In file: %s, line %d\n", \
             #x, __FILE__, __LINE__); \
-            fprintf(stderr, __VA_ARGS__); \
+            fprintf(stderr, __VA_ARGS__);                           \
+            fprintf(stderr, "\n");  \
             printCurrentStacktrace(); \
             raise(SIGABRT); \
         } \

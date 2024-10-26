@@ -37,6 +37,14 @@ private:
     // here as well? tbd)
     uint64_t functionKeys1;
 
+#ifdef DEBUG_ASSERTIONS
+    // these variables say which keys were checked in frame and then crashes the program
+    // if they were checked multiple times (keymap overlap)
+    uint64_t printableKeyFetched;
+    uint64_t functionKeys0Fetched;
+    uint64_t functionKeys1Fetched;
+#endif
+
     double lastTime;
     double delta;
 
@@ -77,6 +85,31 @@ private:
         }
         return false;
     }
+
+#ifdef DEBUG_ASSERTIONS
+
+    inline void setKeyFetched(int key) {
+        if (key <= GLFW_KEY_GRAVE_ACCENT && key >= GLFW_KEY_SPACE) {
+            printableKeyFetched |= 1 << (GLFW_KEY_GRAVE_ACCENT - key);
+        } else if (key <= GLFW_KEY_KP_0 && key >= GLFW_KEY_ESCAPE) {
+            functionKeys0Fetched |= 1 << (GLFW_KEY_KP_0 - key);
+        } else if (key <= GLFW_KEY_MENU && key >= GLFW_KEY_KP_1) {
+            functionKeys1Fetched |= 1 << (GLFW_KEY_MENU - key);
+        }
+    }
+
+    [[nodiscard]] inline bool getKeyFetched(int key) const {
+        if (key <= GLFW_KEY_GRAVE_ACCENT && key >= GLFW_KEY_SPACE) {
+            return (printableKeyFetched & (1 << (GLFW_KEY_GRAVE_ACCENT - key))) != 0;
+        } else if (key <= GLFW_KEY_KP_0 && key >= GLFW_KEY_ESCAPE) {
+            return (functionKeys0Fetched & (1 << (GLFW_KEY_KP_0 - key))) != 0;
+        } else if (key <= GLFW_KEY_MENU && key >= GLFW_KEY_KP_1) {
+            return (functionKeys1Fetched & 1 << (GLFW_KEY_MENU - key)) != 0;
+        }
+        return false;
+    }
+
+#endif
     //endregion
 
     explicit GLWindow(GLFWwindow* window, double lastTime, int currentWidth, int currentHeight)
@@ -85,6 +118,11 @@ private:
               printableKeyStatus(0),
               functionKeys0(0),
               functionKeys1(0),
+#ifdef DEBUG_ASSERTIONS
+              printableKeyFetched(0),
+              functionKeys0Fetched(0),
+              functionKeys1Fetched(0),
+#endif
               lastTime(lastTime),
               delta(0),
               currentWidth(currentWidth),
@@ -200,7 +238,13 @@ public:
             WindowSize{.width = other.currentWidth, .height = other.currentHeight}),
                                 window(other.window), printableKeyStatus(other.printableKeyStatus),
                                 functionKeys0(other.functionKeys0),
-                                functionKeys1(other.functionKeys1), lastTime(other.lastTime),
+                                functionKeys1(other.functionKeys1),
+#ifdef DEBUG_ASSERTIONS
+                                printableKeyFetched(other.printableKeyFetched),
+                                functionKeys0Fetched(other.functionKeys0Fetched),
+                                functionKeys1Fetched(other.functionKeys1Fetched),
+#endif
+                                lastTime(other.lastTime),
                                 delta(other.delta),
                                 currentWidth(other.currentWidth),
                                 currentHeight(other.currentHeight),
@@ -222,6 +266,11 @@ public:
                                          printableKeyStatus(other.printableKeyStatus),
                                          functionKeys0(other.functionKeys0),
                                          functionKeys1(other.functionKeys1),
+#ifdef DEBUG_ASSERTIONS
+                                         printableKeyFetched(other.printableKeyFetched),
+                                         functionKeys0Fetched(other.functionKeys0Fetched),
+                                         functionKeys1Fetched(other.functionKeys1Fetched),
+#endif
                                          lastTime(other.lastTime),
                                          delta(other.delta), currentWidth(other.currentWidth),
                                          currentHeight(other.currentHeight),
@@ -238,11 +287,23 @@ public:
     }
     //endregion
 
-    [[nodiscard]] inline bool isPressed(int key) const noexcept {
+    [[nodiscard]] inline bool isPressed(int key) noexcept {
+#ifdef DEBUG_ASSERTIONS
+        DEBUG_ASSERTF(!getKeyFetched(key),
+                      "Keymap overlap on key %d! This key was checked multiple times during one frame",
+                      key);
+        setKeyFetched(key);
+#endif
         return getKey(key);
     }
 
     bool isPressedAndClear(int key) {
+#ifdef DEBUG_ASSERTIONS
+        DEBUG_ASSERTF(!getKeyFetched(key),
+                      "Keymap overlap on key %d! This key was checked multiple times during one frame",
+                      key);
+        setKeyFetched(key);
+#endif
         bool val = getKey(key);
         clearKey(key);
         return val;
@@ -359,6 +420,11 @@ public:
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
+#ifdef DEBUG_ASSERTIONS
+        printableKeyFetched = 0;
+        functionKeys0Fetched = 0;
+        functionKeys1Fetched = 0;
+#endif
     }
 
     [[nodiscard]] inline bool shouldClose() const noexcept {

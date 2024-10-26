@@ -14,7 +14,6 @@ class SceneSuzi : public Scene {
     Suzi suzi;
     std::shared_ptr<GLWindow> window;
     std::shared_ptr<ShaderBasic> shaderBasic;
-    std::shared_ptr<PerspectiveProjection> projection;
     Camera camera;
 
     bool running = true;
@@ -74,7 +73,7 @@ class SceneSuzi : public Scene {
         float lastFov = fov;
         ImGui::SliderFloat("FOV", &fov, 30, 130);
         if (lastFov != fov) {
-            projection->setFov(fov);
+            camera.projection()->setFov(fov);
         }
 
         if (ImGui::Button("Resume")) {
@@ -91,14 +90,11 @@ class SceneSuzi : public Scene {
 public:
     explicit SceneSuzi(const std::shared_ptr<GLWindow> &window, const ShaderLoader &loader)
             : suzi(), window(window),
-              camera(0.13) {
+              camera(0.13, window) {
         auto shader = ShaderBasic::load(loader).value();
-        camera.registerCameraObserver(shader);
+        camera.attach(shader);
+        camera.projection()->attach(shader);
         shaderBasic = std::move(shader);
-        auto perspectiveProjection = std::make_shared<PerspectiveProjection>(window->width(),
-                                                                             window->height());
-        window->registerResizeCallback(perspectiveProjection);
-        projection = perspectiveProjection;
     }
 
     void render() override {
@@ -110,7 +106,6 @@ public:
             handleMouseInput();
         }
         shaderBasic->bind();
-        shaderBasic->projection(*projection);
         shaderBasic->modelMatrix(glm::mat4(1));
         suzi.draw();
         shaderBasic->unbind();

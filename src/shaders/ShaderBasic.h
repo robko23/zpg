@@ -3,33 +3,31 @@
 #include "../Camera.h"
 #include "Shader.h"
 #include "../ShaderLoader.h"
-#include "../CameraObserver.h"
 #include <optional>
 #include <memory>
 #include "glm/mat4x4.hpp"
 #include "../Projection.h"
 #include <glm/gtx/string_cast.hpp>
+#include "../Observer.h"
 
-class ShaderBasic : public CameraObserver, public Shader {
+class ShaderBasic
+        : public Observable<ViewMatrix>, public Observable<ProjectionMatrix>, public Shader {
 private:
     ShaderProgram program;
-    glm::mat4 currentCamera;
+    ViewMatrix viewMatrix;
+    ProjectionMatrix projectionMatrix;
 
     explicit ShaderBasic(ShaderProgram program) : program(std::move(program)),
-                                                  currentCamera(glm::mat4(1)) {
-    }
-
-    inline void updateCamera() {
-        DEBUG_ASSERT(program.isBound());
-        program.bindParam("viewMatrix", currentCamera);
+                                                  viewMatrix(glm::mat4(1)),
+                                                  projectionMatrix(glm::mat4(1)) {
     }
 
 public:
     ShaderBasic(const ShaderBasic &other) = delete;
 
     ShaderBasic(ShaderBasic &&other) noexcept: program(std::move(other.program)),
-                                               currentCamera(other.currentCamera)
-                                               {}
+                                               viewMatrix(other.viewMatrix),
+                                               projectionMatrix(other.projectionMatrix) {}
 
     static std::optional<std::shared_ptr<ShaderBasic>> load(const ShaderLoader &loader) {
         auto maybeVertexShader = loader.loadVertex("basic.glsl");
@@ -57,29 +55,21 @@ public:
         program.bindParam("modelMatrix", mat);
     }
 
-    void projection(const Projection& projection) {
-        DEBUG_ASSERT(program.isBound());
-        program.bindParam("projectionMatrix", projection.getProjectionMatrix());
+    void update(const ViewMatrix &action) override {
+        viewMatrix = action;
     }
 
-    void onCameraChange(glm::mat4 mat4) override {
-        currentCamera = mat4;
+    void update(const ProjectionMatrix &action) override {
+        projectionMatrix = action;
     }
 
     void bind() override {
         program.bind();
-        updateCamera();
+        program.bindParam("viewMatrix", viewMatrix.viewMatrix);
+        program.bindParam("projectionMatrix", projectionMatrix.projectionMatrix);
     }
 
     void unbind() override {
         program.unbind();
-    }
-
-    bool eq(CameraObserver &other) override {
-        auto otherShader = dynamic_cast<ShaderBasic*>(&other);
-        if (nullptr == otherShader) {
-            return false;
-        }
-        return otherShader->program == this->program;
     }
 };

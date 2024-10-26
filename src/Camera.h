@@ -6,14 +6,18 @@
 
 #include <deque>
 #include <algorithm>
-#include "CameraObserver.h"
 #include "glm/vec3.hpp"
 #include "glm/gtc/matrix_transform.hpp"
 #include <memory>
+#include "Projection.h"
+#include "Observer.h"
 
-class Camera {
+struct ViewMatrix {
+    glm::mat4 viewMatrix;
+};
+
+class Camera : public Subject<ViewMatrix> {
 private:
-    std::deque<std::shared_ptr<CameraObserver>> observers;
     glm::vec3 m_eye;
     glm::vec3 m_target;
     glm::vec3 m_up;
@@ -23,14 +27,14 @@ private:
     glm::vec2 prev_pos = glm::vec2(0);
     bool firstMouse = true;
     glm::vec<2, double> prevPos = glm::vec2(0);
+    std::shared_ptr<PerspectiveProjection> perspectiveProjection;
+    std::shared_ptr<GLWindow> window;
 
     glm::mat4 viewMatrix = glm::mat4(1);
 
     void handleChange() {
         recalculate();
-        for (const auto &item: observers) {
-            item->onCameraChange(viewMatrix);
-        }
+        notify(ViewMatrix{.viewMatrix = viewMatrix});
     }
 
     void recalculate() {
@@ -38,10 +42,20 @@ private:
     }
 
 public:
-    explicit Camera(double sensitivity, glm::vec3 initialPosition = glm::vec3(-3, 3, -3))
-            : observers(), m_eye(initialPosition), m_target(0), m_up(0, 1, 0),
-              sensitivity(sensitivity) {
-        recalculate();
+    explicit Camera(double sensitivity, const std::shared_ptr<GLWindow> &window,
+                    glm::vec3 initialPosition = glm::vec3(-3, 3, -3))
+            : Subject<ViewMatrix>(ViewMatrix{.viewMatrix = glm::mat4(1)}), m_eye(initialPosition),
+              m_target(0), m_up(0, 1, 0), sensitivity(sensitivity),
+              window(window) {
+        perspectiveProjection = std::make_shared<PerspectiveProjection>();
+        window->attach(perspectiveProjection);
+        handleChange();
+    }
+
+    [[nodiscard]] PerspectiveProjection* projection() {
+        auto ptr = perspectiveProjection.get();
+        DEBUG_ASSERT_NOT_NULL(ptr)
+        return ptr;
     }
 
     void moveForward(float speed) {
@@ -95,18 +109,8 @@ public:
         handleChange();
     }
 
-    void registerCameraObserver(const std::shared_ptr<CameraObserver> &observer) noexcept {
-        observers.emplace_back(observer);
-    }
-
-    void unregisterObserver(const std::shared_ptr<CameraObserver> &observer) {
-        auto it = std::find_if(observers.begin(), observers.end(),
-                               [&observer](const std::shared_ptr<CameraObserver> &o) {
-                                   return *o == *observer;
-                               });
-        if (it != observers.end()) {
-            observers.erase(it);
-        }
-    }
+    ~Camera() override {
+        window->detach(perspectiveProjection);
+    };
 };
 

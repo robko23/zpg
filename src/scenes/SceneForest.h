@@ -40,7 +40,6 @@ private:
     double walkingSpeedCalc;
 
     Camera camera;
-    std::shared_ptr<PerspectiveProjection> projection;
 
     float maxScatterRadius = 10;
 
@@ -125,18 +124,18 @@ private:
         ImGui::End();
     }
 
-    std::vector<glm::mat4> scatterObjects(int num) const {
+    [[nodiscard]] std::vector<glm::mat4> scatterObjects(int num) const {
         auto trans = std::vector<glm::mat4>(num);
         std::random_device randomDevice;
         std::mt19937 generator(randomDevice());
-        std::uniform_real_distribution<> angle_distribution(0, 2*M_PI);
-        std::uniform_real_distribution<> radius_distribution(0,1);
+        std::uniform_real_distribution<> angle_distribution(0, 2 * M_PI);
+        std::uniform_real_distribution<> radius_distribution(0, 1);
 
         for (int i = 0; i < num; ++i) {
             double theta = angle_distribution(generator);
             double radius = maxScatterRadius * sqrt(radius_distribution(generator));
             auto x = radius * std::cos(theta);
-            auto z =  radius * std::sin(theta);
+            auto z = radius * std::sin(theta);
 
             auto modelMatrix = TransformationBuilder()
                     .rotateY(std::cos(theta))
@@ -186,15 +185,13 @@ public:
               currentSensitivity(5),
               currentWalkingSpeed(10),
               walkingSpeedCalc(0),
-              camera(getSensitivity()),
-              projection(
-                      std::make_shared<PerspectiveProjection>(window->width(), window->height())) {
+              camera(getSensitivity(), window) {
         calculateWalkingSpeed();
         treeTrans = scatterObjects(numberOfTrees);
         bushesTrans = scatterObjects(numberOfBushes);
         auto shader = ShaderBasic::load(loader).value();
-        camera.registerCameraObserver(shader);
-        window->registerResizeCallback(projection);
+        camera.attach(shader);
+        camera.projection()->attach(shader);
 
         shaderBasic = std::move(shader);
     }
@@ -208,8 +205,6 @@ public:
             handleMouseInput();
         }
         shaderBasic->bind();
-
-        shaderBasic->projection(*projection);
 
         for (const auto &item: treeTrans) {
             shaderBasic->modelMatrix(item);

@@ -17,7 +17,6 @@ class SceneLightningBalls : public Scene {
     std::shared_ptr<GLWindow> window;
     std::shared_ptr<ShaderLightning> shaderLightning;
 //    std::shared_ptr<ShaderBasic> shaderLightning;
-    std::shared_ptr<PerspectiveProjection> projection;
     Camera camera;
     std::vector<glm::mat4> ballsModel;
 
@@ -97,14 +96,11 @@ public:
     explicit SceneLightningBalls(const std::shared_ptr<GLWindow> &window,
                                  const ShaderLoader &loader)
             : sphere(), window(window),
-              camera(0.13), ballsModel() {
+              camera(0.13, window), ballsModel() {
         auto shader = ShaderLightning::load(loader).value();
-        camera.registerCameraObserver(shader);
+        camera.attach(shader);
+        camera.projection()->attach(shader);
         shaderLightning = std::move(shader);
-        auto perspectiveProjection = std::make_shared<PerspectiveProjection>(window->width(),
-                                                                             window->height());
-        window->registerResizeCallback(perspectiveProjection);
-        projection = perspectiveProjection;
         makeBalls();
     }
 
@@ -117,7 +113,6 @@ public:
             handleMouseInput();
         }
         shaderLightning->bind();
-        shaderLightning->projection(*projection);
 
         for (const auto &item: ballsModel) {
             shaderLightning->modelMatrix(item);

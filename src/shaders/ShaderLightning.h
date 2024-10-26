@@ -3,33 +3,32 @@
 #include "../Camera.h"
 #include "Shader.h"
 #include "../ShaderLoader.h"
-#include "../CameraObserver.h"
 #include <optional>
 #include <memory>
 #include "glm/mat4x4.hpp"
 #include "../Projection.h"
 #include <glm/gtx/string_cast.hpp>
+#include "../Observer.h"
 
-class ShaderLightning : public CameraObserver, public Shader {
+class ShaderLightning
+        : public Shader,
+          public Observable<ViewMatrix>, public Observable<ProjectionMatrix> {
 private:
     ShaderProgram program;
-    glm::mat4 currentCamera;
+    ViewMatrix viewMatrix;
+    ProjectionMatrix projectionMatrix;
 
     explicit ShaderLightning(ShaderProgram program) : program(std::move(program)),
-                                                  currentCamera(glm::mat4(1)) {
-    }
-
-    inline void updateCamera() {
-        DEBUG_ASSERT(program.isBound());
-        program.bindParam("viewMatrix", currentCamera);
+                                                      viewMatrix(glm::mat4(1)),
+                                                      projectionMatrix(glm::mat4(1)) {
     }
 
 public:
     ShaderLightning(const ShaderLightning &other) = delete;
 
     ShaderLightning(ShaderLightning &&other) noexcept: program(std::move(other.program)),
-                                               currentCamera(other.currentCamera)
-                                               {}
+                                                       viewMatrix(other.viewMatrix),
+                                                       projectionMatrix(other.projectionMatrix) {}
 
     static std::optional<std::shared_ptr<ShaderLightning>> load(const ShaderLoader &loader) {
         auto maybeVertexShader = loader.loadVertex("lightning.glsl");
@@ -57,30 +56,27 @@ public:
         program.bindParam("modelMatrix", mat);
     }
 
-    void projection(const Projection& projection) {
+    void projection(const PerspectiveProjection &projection) {
         DEBUG_ASSERT(program.isBound());
         program.bindParam("projectionMatrix", projection.getProjectionMatrix());
     }
 
-    void onCameraChange(glm::mat4 mat4) override {
-        currentCamera = mat4;
+    void update(const ViewMatrix &action) override {
+        viewMatrix = action;
+    }
+
+    void update(const ProjectionMatrix &action) override {
+        projectionMatrix = action;
     }
 
     void bind() override {
         program.bind();
-        updateCamera();
         program.bindParam("normalMatrix", glm::mat3(1));
+        program.bindParam("viewMatrix", viewMatrix.viewMatrix);
+        program.bindParam("projectionMatrix", projectionMatrix.projectionMatrix);
     }
 
     void unbind() override {
         program.unbind();
-    }
-
-    bool eq(CameraObserver &other) override {
-        auto otherShader = dynamic_cast<ShaderLightning*>(&other);
-        if (nullptr == otherShader) {
-            return false;
-        }
-        return otherShader->program == this->program;
     }
 };

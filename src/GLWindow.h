@@ -13,12 +13,17 @@
 #include <list>
 #include <functional>
 #include <algorithm>
-#include "ResizeObserver.h"
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
+#include "Observer.h"
 
-class GLWindow {
+struct WindowSize {
+    int width;
+    int height;
+};
+
+class GLWindow : public Subject<WindowSize> {
 private:
     GLFWwindow* window;
     // Normal printable keys defined in glfw3.h from GLFW_KEY_SPACE up to GLFW_KEY_GRAVE_ACCENT
@@ -40,8 +45,6 @@ private:
 
     double currentMouseX;
     double currentMouseY;
-
-    std::list<std::shared_ptr<ResizeObserver>> resizeObservers;
 
     //region Key management
     inline void setKey(int key) {
@@ -77,15 +80,16 @@ private:
     //endregion
 
     explicit GLWindow(GLFWwindow* window, double lastTime, int currentWidth, int currentHeight)
-            : window(window),
+            : Subject<WindowSize>(WindowSize{.width = currentWidth, .height = currentHeight}),
+              window(window),
               printableKeyStatus(0),
               functionKeys0(0),
               functionKeys1(0),
               lastTime(lastTime),
               delta(0),
               currentWidth(currentWidth),
-              currentHeight(currentHeight),
-              currentMouseX(0), currentMouseY(0), resizeObservers() {
+              currentHeight(currentHeight), currentMouseX(0),
+              currentMouseY(0) {
     }
 
     //region Callbacks
@@ -104,9 +108,8 @@ private:
     void onResize(GLFWwindow* target, int newWidth, int newHeight) {
         currentWidth = newWidth;
         currentHeight = newHeight;
-        for (const auto &item: this->resizeObservers) {
-            item->onWindowResize(newWidth, newHeight);
-        }
+        auto action = WindowSize{.width = currentWidth, .height = currentHeight};
+        notify(action);
         glViewport(0, 0, currentWidth, currentHeight);
     }
 
@@ -193,27 +196,29 @@ private:
 public:
 
     //region Copy/move constructors
-    GLWindow(GLWindow &other) : window(other.window), printableKeyStatus(other.printableKeyStatus),
+    GLWindow(GLWindow &other) : Subject<WindowSize>(
+            WindowSize{.width = other.currentWidth, .height = other.currentHeight}),
+                                window(other.window), printableKeyStatus(other.printableKeyStatus),
                                 functionKeys0(other.functionKeys0),
                                 functionKeys1(other.functionKeys1), lastTime(other.lastTime),
                                 delta(other.delta),
                                 currentWidth(other.currentWidth),
                                 currentHeight(other.currentHeight),
                                 currentMouseX(other.currentMouseX),
-                                currentMouseY(other.currentMouseY),
-                                resizeObservers(other.resizeObservers) {
+                                currentMouseY(other.currentMouseY) {
         other.window = nullptr;
         other.printableKeyStatus = 0;
         other.lastTime = 0;
         other.functionKeys0 = 0;
         other.functionKeys1 = 0;
         other.delta = 0;
-        other.resizeObservers = std::list<std::shared_ptr<ResizeObserver>>();
         other.window = nullptr;
         other.currentHeight = 0;
     }
 
-    GLWindow(GLWindow &&other) noexcept: window(other.window),
+    GLWindow(GLWindow &&other) noexcept: Subject(
+            WindowSize{.width = other.currentWidth, .height = other.currentHeight}),
+                                         window(other.window),
                                          printableKeyStatus(other.printableKeyStatus),
                                          functionKeys0(other.functionKeys0),
                                          functionKeys1(other.functionKeys1),
@@ -221,15 +226,13 @@ public:
                                          delta(other.delta), currentWidth(other.currentWidth),
                                          currentHeight(other.currentHeight),
                                          currentMouseX(other.currentMouseX),
-                                         currentMouseY(other.currentMouseY),
-                                         resizeObservers(std::move(other.resizeObservers)) {
+                                         currentMouseY(other.currentMouseY) {
         other.window = nullptr;
         other.printableKeyStatus = 0;
         other.lastTime = 0;
         other.functionKeys0 = 0;
         other.functionKeys1 = 0;
         other.delta = 0;
-        other.resizeObservers = std::list<std::shared_ptr<ResizeObserver>>();
         other.window = nullptr;
         other.currentHeight = 0;
     }
@@ -270,7 +273,6 @@ public:
         ImGuiIO &io = ImGui::GetIO();
         (void) io;
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
-        io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
         io.ConfigDebugHighlightIdConflicts = true;
 
 
@@ -335,20 +337,6 @@ public:
         }
     }
 
-    void registerResizeCallback(const std::shared_ptr<ResizeObserver> &observer) {
-        DEBUG_ASSERTF(nullptr != window, "Attempting to register callback on non-existent window")
-        resizeObservers.emplace_back(observer);
-    }
-
-    bool unregisterResizeCallback(const std::shared_ptr<ResizeObserver> &observer) {
-        auto it = std::find(resizeObservers.begin(), resizeObservers.end(), observer);
-        if (it != resizeObservers.end()) {
-            resizeObservers.erase(it);
-            return true;
-        }
-        return false;
-    }
-
     void endFrame() noexcept {
         if (window) {
             ImGui::Render();
@@ -397,7 +385,7 @@ public:
         return currentMouseY;
     }
 
-    ~GLWindow() {
+    ~GLWindow() override {
         if (window) {
             ImGui_ImplOpenGL3_Shutdown();
             ImGui_ImplGlfw_Shutdown();

@@ -20,26 +20,13 @@
 #include <random>
 #include <cmath>
 #include "../drawable/Bush.h"
+#include "BasicScene.h"
 
-class SceneForest : public Scene {
+class SceneForest : public BasicScene {
 private:
-    const float MIN_SENSITIVITY = 0.02;
-    const float MAX_SENSITIVITY = 0.25;
-    const int SENSITIVITY_STEPS = 20;
-
-    const float MIN_WALKING_SPEED = 0.02;
-    const float MAX_WALKING_SPEED = 0.25;
-    const int WALKING_SPEED_STEPS = 20;
-
-    std::shared_ptr<GLWindow> window;
     Tree tree;
     Bush bush;
     std::shared_ptr<ShaderBasic> shaderBasic;
-    int currentSensitivity;
-    int currentWalkingSpeed;
-    double walkingSpeedCalc;
-
-    Camera camera;
 
     float maxScatterRadius = 10;
 
@@ -49,51 +36,8 @@ private:
     int numberOfBushes = 300;
     std::vector<glm::mat4> bushesTrans;
 
-    double lastMouseX = 0;
-    double lastMouseY = 0;
-
-    bool inMenu = true;
-    bool running = true;
-
-    void showMenu() {
-        inMenu = true;
-        window->releaseCursor();
-    }
-
-    void hideMenu() {
-        inMenu = false;
-        window->captureCursor();
-    }
-
-    [[nodiscard]] double getSensitivity() const {
-        return math::interpolate(static_cast<float>(currentSensitivity), 0.f,
-                                 static_cast<float>(SENSITIVITY_STEPS), MIN_SENSITIVITY,
-                                 MAX_SENSITIVITY);
-    }
-
-    void calculateWalkingSpeed() {
-        walkingSpeedCalc = math::interpolate(static_cast<float>(currentWalkingSpeed), 0.f,
-                                             static_cast<float>(WALKING_SPEED_STEPS),
-                                             MIN_WALKING_SPEED,
-                                             MAX_WALKING_SPEED);
-    }
-
-    void renderMenu() {
+    void renderMenu() override {
         ImGui::Begin("SceneForest controls");
-
-        int prevSens = currentSensitivity;
-        ImGui::SliderInt("Sensitivity", &currentSensitivity, 0, SENSITIVITY_STEPS);
-        if (prevSens != currentSensitivity) {
-            camera.setSensitivity(getSensitivity());
-        }
-        ImGui::Text("Real Sens: %f", getSensitivity());
-
-        int prevWS = currentWalkingSpeed;
-        ImGui::SliderInt("Walking speed", &currentWalkingSpeed, 0, WALKING_SPEED_STEPS);
-        if (prevWS != currentWalkingSpeed) {
-            calculateWalkingSpeed();
-        }
-        ImGui::Text("Real walking speed: %f", walkingSpeedCalc);
 
         int prevNot = numberOfTrees;
         ImGui::SliderInt("Number of trees", &numberOfTrees, 10, 200);
@@ -114,13 +58,6 @@ private:
             bushesTrans = scatterObjects(numberOfBushes);
         }
 
-        if (ImGui::Button("Resume")) {
-            hideMenu();
-        }
-
-        if (ImGui::Button("Exit")) {
-            running = false;
-        }
         ImGui::End();
     }
 
@@ -147,46 +84,9 @@ private:
         return trans;
     }
 
-    void handleMenuKeyInput() {
-        if (window->isPressedAndClear(GLFW_KEY_ESCAPE)) {
-            hideMenu();
-        }
-    }
-
-    void handleSceneKeyInput() {
-        if (window->isPressed(GLFW_KEY_W)) {
-            camera.moveForward(walkingSpeedCalc);
-        }
-        if (window->isPressed(GLFW_KEY_S)) {
-            camera.moveBack(walkingSpeedCalc);
-        }
-        if (window->isPressed(GLFW_KEY_A)) {
-            camera.moveLeft(walkingSpeedCalc);
-        }
-        if (window->isPressed(GLFW_KEY_D)) {
-            camera.moveRight(walkingSpeedCalc);
-        }
-        if (window->isPressedAndClear(GLFW_KEY_ESCAPE)) {
-            showMenu();
-        }
-    }
-
-    void handleMouseInput() {
-        if (window->mouseX() != lastMouseX || window->mouseY() != lastMouseY) {
-            camera.onMouseMove(window->mouseX(), window->mouseY());
-            lastMouseX = window->mouseX();
-            lastMouseY = window->mouseY();
-        }
-    }
-
 public:
     explicit SceneForest(const std::shared_ptr<GLWindow> &window, const ShaderLoader &loader)
-            : window(window),
-              currentSensitivity(5),
-              currentWalkingSpeed(10),
-              walkingSpeedCalc(0),
-              camera(getSensitivity(), window) {
-        calculateWalkingSpeed();
+            : BasicScene(window) {
         treeTrans = scatterObjects(numberOfTrees);
         bushesTrans = scatterObjects(numberOfBushes);
         auto shader = ShaderBasic::load(loader).value();
@@ -196,14 +96,7 @@ public:
         shaderBasic = std::move(shader);
     }
 
-    void render() override {
-        if (inMenu) {
-            renderMenu();
-            handleMenuKeyInput();
-        } else {
-            handleSceneKeyInput();
-            handleMouseInput();
-        }
+    void renderScene() override {
         shaderBasic->bind();
 
         for (const auto &item: treeTrans) {
@@ -217,14 +110,6 @@ public:
         }
 
         shaderBasic->unbind();
-    }
-
-    [[nodiscard]] bool shouldExit() override {
-        bool shouldExit = !running;
-        if (shouldExit) {
-            running = true;
-        }
-        return shouldExit;
     }
 
     const char* getId() override {

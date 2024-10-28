@@ -38,6 +38,24 @@ private:
     }
 
     void recalculate() {
+        if (pitch > 89.0f) {
+            pitch = 89.0f;
+        } else if (pitch < -89.0f) {
+            pitch = -89.0f;
+        }
+
+        if (yaw > 360) {
+            yaw = 0;
+        } else if (yaw < 0) {
+            yaw = 360;
+        }
+        auto direction = glm::vec<3, double>(0);
+
+        direction.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
+        direction.y = sin(glm::radians(pitch));
+        direction.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
+        m_target = glm::normalize(direction);
+
         viewMatrix = glm::lookAt(m_eye, m_eye + m_target, m_up);
     }
 
@@ -82,6 +100,21 @@ public:
         sensitivity = val;
     }
 
+    void setPosition(glm::vec3 position) {
+        m_eye = position;
+        handleChange();
+    }
+
+    void setYaw(float val) {
+        yaw = val;
+        handleChange();
+    }
+
+    void setPitch(float val) {
+        pitch = val;
+        handleChange();
+    }
+
     void onMouseMove(double mouseX, double mouseY) {
         if (firstMouse) {
             prevPos = glm::vec2(mouseX, mouseY);
@@ -93,20 +126,9 @@ public:
             yaw += xOffset * sensitivity;
             pitch += yOffset * sensitivity;
 
-            if (pitch > 89.0f) {
-                pitch = 89.0f;
-            } else if (pitch < -89.0f) {
-                pitch = -89.0f;
-            }
-            auto direction = glm::vec<3, double>(0);
-
-            direction.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
-            direction.y = sin(glm::radians(pitch));
-            direction.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
-            m_target = glm::normalize(direction);
+            recalculate();
+            handleChange();
         }
-        recalculate();
-        handleChange();
     }
 
     ~Camera() override {

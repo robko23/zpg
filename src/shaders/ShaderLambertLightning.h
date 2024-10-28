@@ -1,0 +1,166 @@
+#pragma once
+
+#include "../Camera.h"
+#include "Shader.h"
+#include "../ShaderLoader.h"
+#include <optional>
+#include <memory>
+#include "glm/mat4x4.hpp"
+#include "../Projection.h"
+#include <glm/gtx/string_cast.hpp>
+#include "../Observer.h"
+#include "../gl_utils.h"
+
+template<typename Inner>
+class SSBO {
+    static_assert(alignof(Inner) == 16);
+    static_assert(sizeof(GLuint) == sizeof(unsigned int));
+private:
+    // https://www.khronos.org/opengl/wiki/Interface_Block_(GLSL)#Shader_storage_blocks
+    // https://www.khronos.org/opengl/wiki/Shader_Storage_Buffer_Object
+    GLuint m_ssboId = 0;
+    GLuint m_binding;
+    std::vector<Inner> m_objects;
+public:
+    SSBO(const SSBO &other) = delete;
+
+    SSBO(SSBO &&other) noexcept: m_ssboId(other.m_ssboId),
+                                 m_binding(other.m_binding),
+                                 m_objects(std::move(other.m_objects)) {
+        other.m_ssboId = 0;
+    }
+
+    explicit SSBO(GLuint binding) : m_binding(binding) {
+        glGenBuffers(1, &m_ssboId);
+        DEBUG_ASSERT(0 != m_ssboId);
+    }
+
+    // Sends array of objects into the ssbo buffer
+    void send() {
+        DEBUG_ASSERT(0 != m_ssboId);
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_ssboId);
+        gl::assertNoError();
+
+        size_t allocSize = m_objects.size() * sizeof(Inner);
+        glBufferData(GL_SHADER_STORAGE_BUFFER, allocSize, m_objects.data(), GL_DYNAMIC_DRAW);
+        gl::assertNoError();
+
+#ifdef DEBUG_ASSERTIONS
+        // unbind the buffer
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+        gl::assertNoError();
+#endif
+    }
+
+    // Binds the buffer to the binding used in GLSL shader
+    void bind() {
+        DEBUG_ASSERT(0 != m_ssboId);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, m_binding, m_ssboId);
+        gl::assertNoError();
+    }
+
+    std::vector<Inner> &objects() {
+        return m_objects;
+    }
+
+    ~SSBO() {
+        if (0 != m_ssboId) {
+            glDeleteBuffers(1, &m_ssboId);
+        }
+    }
+};
+
+class ShaderLambertLightning
+        : public Shader,
+          public Observer<ViewMatrix>, public Observer<ProjectionMatrix> {
+private:
+    struct alignas(16) LambertLight {
+        glm::vec3 position;
+        float _padding;
+        glm::vec4 diffuse;
+        float intensity;
+//        float _padding;
+    };
+
+    ShaderProgram program;
+    ViewMatrix viewMatrix;
+    ProjectionMatrix projectionMatrix;
+    SSBO<LambertLight> lights;
+
+    static inline void assertNoError() {
+#ifdef DEBUG_ASSERTIONS
+        GLenum err = glGetError();
+        DEBUG_ASSERT(GL_NO_ERROR == err);
+#endif
+    }
+
+    explicit ShaderLambertLightning(ShaderProgram program) : program(std::move(program)),
+                                                             viewMatrix(glm::mat4(1)),
+                                                             projectionMatrix(glm::mat4(1)),
+                                                             lights(0) {
+        lights.objects().emplace_back(LambertLight{
+                .position = glm::vec3(0, 10, 0),
+                ._padding = 0,
+                .diffuse = glm::vec4(0.385, 0.647, 0.812, 1.0),
+                .intensity = 0.1,
+        });
+        lights.send();
+    }
+
+public:
+    ShaderLambertLightning(const ShaderLambertLightning &other) = delete;
+
+    ShaderLambertLightning(ShaderLambertLightning &&other) noexcept:
+            program(std::move(other.program)),
+            viewMatrix(other.viewMatrix),
+            projectionMatrix(other.projectionMatrix),
+            lights(std::move(other.lights)) {
+    }
+
+    static std::optional<std::shared_ptr<ShaderLambertLightning>> load(const ShaderLoader &loader) {
+        auto maybeVertexShader = loader.loadVertex("lightning.glsl");
+        if (!maybeVertexShader.has_value()) {
+            return {};
+        }
+        auto maybeFragmentShader = loader.loadFragment("lambertLight.glsl");
+        if (!maybeFragmentShader.has_value()) {
+            return {};
+        }
+
+        auto maybeShaderProgram = ShaderProgram::link(maybeFragmentShader.value(),
+                                                      maybeVertexShader.value());
+        if (!maybeShaderProgram.has_value()) {
+            return {};
+        }
+
+        auto inner = ShaderLambertLightning(maybeShaderProgram.value());
+        auto self = std::make_shared<ShaderLambertLightning>(std::move(inner));
+        return std::move(self);
+    }
+
+    void modelMatrix(glm::mat4 mat) {
+        DEBUG_ASSERT(program.isBound());
+        program.bindParam("modelMatrix", mat);
+    }
+
+    void update(const ViewMatrix &action) override {
+        viewMatrix = action;
+    }
+
+    void update(const ProjectionMatrix &action) override {
+        projectionMatrix = action;
+    }
+
+    void bind() override {
+        lights.bind();
+        program.bind();
+        program.bindParam("normalMatrix", glm::mat3(1));
+        program.bindParam("viewMatrix", viewMatrix.viewMatrix);
+        program.bindParam("projectionMatrix", projectionMatrix.projectionMatrix);
+        program.bindParam("ambient", glm::vec4(0.1, 0.1, 0.1, 1.0));
+    }
+
+    void unbind() override {
+        program.unbind();
+    }
+};

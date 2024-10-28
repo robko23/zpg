@@ -165,8 +165,8 @@ public:
         return this->bound;
     }
 
-
-    void bindParam(const char* name, const glm::mat4 &mat) const {
+private:
+    void bindInner(const char* name, const std::function<void(GLint)>& function) const {
         DEBUG_ASSERT(this->isBound());
 
         GLint id = glGetUniformLocation(program_id, name);
@@ -180,7 +180,7 @@ public:
         };
 #endif
 
-        glUniformMatrix4fv(id, 1, GL_FALSE, &mat[0][0]);
+        function(id);
 
 #ifdef DEBUG_ASSERTIONS
         {
@@ -190,30 +190,24 @@ public:
         }
 #endif
     }
+public:
 
-    void bindParam(const char* name, const glm::mat3 &mat) const {
-        DEBUG_ASSERT(this->isBound());
+    void bindParam(const char* name, const glm::mat4 &mat) {
+        bindInner(name, [&mat](GLint id) {
+            glUniformMatrix4fv(id, 1, GL_FALSE, &mat[0][0]);
+        });
+    }
 
-        GLint id = glGetUniformLocation(program_id, name);
-        DEBUG_ASSERTF(-1 != id, "Parameter %s may not exist in the shader", name);
+    void bindParam(const char* name, const glm::mat3 &mat) {
+        bindInner(name, [&mat](GLint id) {
+            glUniformMatrix3fv(id, 1, GL_FALSE, &mat[0][0]);
+        });
+    }
 
-#ifdef DEBUG_ASSERTIONS
-        {
-            GLenum err = glGetError();
-            DEBUG_ASSERT(err != GL_INVALID_VALUE);
-            DEBUG_ASSERT(err != GL_INVALID_OPERATION);
-        };
-#endif
-
-        glUniformMatrix3fv(id, 1, GL_FALSE, &mat[0][0]);
-
-#ifdef DEBUG_ASSERTIONS
-        {
-            GLenum err = glGetError();
-            DEBUG_ASSERT(err != GL_INVALID_VALUE);
-            DEBUG_ASSERT(err != GL_INVALID_OPERATION);
-        }
-#endif
+    void bindParam(const char* name, const glm::vec4 &vec) {
+        bindInner(name, [&vec](GLint id) {
+            glUniform4fv(id, 1, &vec[0]);
+        }) ;
     }
 
     bool operator==(const ShaderProgram &rhs) const {

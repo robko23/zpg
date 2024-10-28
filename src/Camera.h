@@ -105,6 +105,10 @@ public:
         handleChange();
     }
 
+    glm::vec3 getPosition() {
+        return m_eye;
+    }
+
     void setYaw(float val) {
         yaw = val;
         handleChange();

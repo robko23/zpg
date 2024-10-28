@@ -20,6 +20,8 @@ class SceneLightningBalls : public BasicScene {
 
     bool ambientEnabled = true;
     bool diffuseEnabled = true;
+    bool specularEnabled = true;
+    bool blinnPhong = true;
     float ambientColor[3] = {0.1, 0.1, 0.1};
 
     void makeBalls() {
@@ -48,12 +50,15 @@ public:
 
         shaderLightning->setAmbientColor(
                 glm::vec3(ambientColor[0], ambientColor[1], ambientColor[2]));
+        shaderLightning->setAmbientEnabled(ambientEnabled);
+        shaderLightning->setDiffuseEnabled(diffuseEnabled);
+        shaderLightning->setSpecularEnabled(specularEnabled);
+        shaderLightning->setHalfwayEnabled(blinnPhong);
     }
 
     void renderScene() override {
-        shaderLightning->setAmbientEnabled(ambientEnabled);
-        shaderLightning->setDiffuseEnabled(diffuseEnabled);
         shaderLightning->bind();
+        shaderLightning->cameraPosition(camera.getPosition());
 
         for (const auto &item: ballsModel) {
             shaderLightning->modelMatrix(item);
@@ -65,8 +70,22 @@ public:
 
     void renderMenu() override {
         ImGui::Begin("Lights settings");
-        ImGui::Checkbox("Ambient", &ambientEnabled);
-        ImGui::Checkbox("Diffuse", &diffuseEnabled);
+        if (ImGui::Checkbox("Ambient", &ambientEnabled)) {
+            shaderLightning->setAmbientEnabled(ambientEnabled);
+        }
+
+        if (ImGui::Checkbox("Diffuse", &diffuseEnabled)) {
+            shaderLightning->setDiffuseEnabled(diffuseEnabled);
+        }
+
+        if (ImGui::Checkbox("Specular", &specularEnabled)) {
+            shaderLightning->setSpecularEnabled(specularEnabled);
+        }
+
+        if (ImGui::Checkbox("use halfway (blinn phong)", &blinnPhong)) {
+            shaderLightning->setHalfwayEnabled(blinnPhong);
+        }
+
         if (ImGui::ColorEdit3("Ambient color", ambientColor)) {
             shaderLightning->setAmbientColor(
                     glm::vec3(ambientColor[0], ambientColor[1], ambientColor[2]));

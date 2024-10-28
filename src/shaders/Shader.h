@@ -166,7 +166,7 @@ public:
     }
 
 private:
-    void bindInner(const char* name, const std::function<void(GLint)>& function) const {
+    void bindInner(const char* name, const std::function<void(GLint)> &function) const {
         DEBUG_ASSERT(this->isBound());
 
         GLint id = glGetUniformLocation(program_id, name);
@@ -190,6 +190,7 @@ private:
         }
 #endif
     }
+
 public:
 
     void bindParam(const char* name, const glm::mat4 &mat) {
@@ -207,7 +208,13 @@ public:
     void bindParam(const char* name, const glm::vec4 &vec) {
         bindInner(name, [&vec](GLint id) {
             glUniform4fv(id, 1, &vec[0]);
-        }) ;
+        });
+    }
+
+    void bindParam(const char* name, const glm::vec3 &vec) {
+        bindInner(name, [&vec](GLint id) {
+            glUniform3fv(id, 1, &vec[0]);
+        });
     }
 
     void bindParam(const char* name, int32_t val) {
@@ -239,12 +246,15 @@ public:
 class Shader {
 public:
     virtual void bind() = 0;
+
     virtual void unbind() = 0;
 
 #ifdef DEBUG_ASSERTIONS
+
     inline static bool isInShaderContext() {
         return getCurrentProgram() != 0;
     }
+
 #endif
 };
 

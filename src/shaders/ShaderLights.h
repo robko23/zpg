@@ -91,6 +91,8 @@ private:
 
     const int32_t FLAG_AMBIENT = 1 << 0;
     const int32_t FLAG_DIFFUSE = 1 << 1;
+    const int32_t FLAG_SPECULAR = 1 << 2;
+    const int32_t FLAG_HALFWAY = 1 << 3;
 
     static inline void assertNoError() {
 #ifdef DEBUG_ASSERTIONS
@@ -108,6 +110,14 @@ private:
                 ._padding = 0,
 //                .color = glm::vec4(0.385, 0.647, 0.812, 1.0),
                 .color = glm::vec4(1, 0, 0, 1.0),
+                .intensity = 0.1,
+        });
+
+        lights.objects().emplace_back(Light{
+                .position = glm::vec3(0, -10, 0),
+                ._padding = 0,
+//                .color = glm::vec4(0.385, 0.647, 0.812, 1.0),
+                .color = glm::vec4(0, 1, 0, 1.0),
                 .intensity = 0.1,
         });
         lights.send();
@@ -144,26 +154,24 @@ public:
         return std::move(self);
     }
 
-    void setAmbientEnabled(bool enabled) {
-        if (enabled) {
-            flags |= FLAG_AMBIENT;
-        } else {
-            flags &= ~FLAG_AMBIENT;
-        }
+#define BITFLAG(FUNC_NAME, FLAG_NAME) \
+    void FUNC_NAME(bool enabled) { \
+        if (enabled) { \
+            flags |= (FLAG_NAME); \
+        } else { \
+            flags &= ~(FLAG_NAME); \
+        } \
     }
 
-    void setDiffuseEnabled(bool enabled) {
-        if (enabled) {
-            flags |= FLAG_DIFFUSE;
-        } else {
-            flags &= ~FLAG_DIFFUSE;
-        }
-    }
+    BITFLAG(setAmbientEnabled, FLAG_AMBIENT);
 
-    void setDiffuseColor(glm::vec3 color) {
-        lights.objects()[0].color = glm::vec4(color, 1);
-        lights.send();
-    }
+    BITFLAG(setDiffuseEnabled, FLAG_DIFFUSE);
+
+    BITFLAG(setSpecularEnabled, FLAG_SPECULAR);
+
+    BITFLAG(setHalfwayEnabled, FLAG_HALFWAY);
+
+#undef BITFLAG
 
     void setAmbientColor(glm::vec3 color) {
         ambientColor = glm::vec4(color, 1);
@@ -172,6 +180,11 @@ public:
     void modelMatrix(glm::mat4 mat) {
         DEBUG_ASSERT(program.isBound());
         program.bindParam("modelMatrix", mat);
+    }
+
+    void cameraPosition(glm::vec3 cameraPosition) {
+        DEBUG_ASSERT(program.isBound());
+        program.bindParam("cameraPosition", cameraPosition);
     }
 
     void update(const ViewMatrix &action) override {
@@ -185,10 +198,13 @@ public:
     void bind() override {
         lights.bind();
         program.bind();
+        // vertex uniforms
         program.bindParam("normalMatrix", glm::mat3(1));
         program.bindParam("viewMatrix", viewMatrix.viewMatrix);
         program.bindParam("projectionMatrix", projectionMatrix.projectionMatrix);
-        program.bindParam("ambient", ambientColor);
+
+        // fragment uniforms
+        program.bindParam("ambientColor", ambientColor);
         program.bindParam("flags", flags);
     }
 

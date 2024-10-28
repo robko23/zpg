@@ -70,7 +70,7 @@ public:
     }
 };
 
-class ShaderLambertLightning
+class ShaderLights
         : public Shader,
           public Observer<ViewMatrix>, public Observer<ProjectionMatrix> {
 private:
@@ -94,10 +94,10 @@ private:
 #endif
     }
 
-    explicit ShaderLambertLightning(ShaderProgram program) : program(std::move(program)),
-                                                             viewMatrix(glm::mat4(1)),
-                                                             projectionMatrix(glm::mat4(1)),
-                                                             lights(0) {
+    explicit ShaderLights(ShaderProgram program) : program(std::move(program)),
+                                                   viewMatrix(glm::mat4(1)),
+                                                   projectionMatrix(glm::mat4(1)),
+                                                   lights(0) {
         lights.objects().emplace_back(LambertLight{
                 .position = glm::vec3(0, 10, 0),
                 ._padding = 0,
@@ -108,16 +108,16 @@ private:
     }
 
 public:
-    ShaderLambertLightning(const ShaderLambertLightning &other) = delete;
+    ShaderLights(const ShaderLights &other) = delete;
 
-    ShaderLambertLightning(ShaderLambertLightning &&other) noexcept:
+    ShaderLights(ShaderLights &&other) noexcept:
             program(std::move(other.program)),
             viewMatrix(other.viewMatrix),
             projectionMatrix(other.projectionMatrix),
             lights(std::move(other.lights)) {
     }
 
-    static std::optional<std::shared_ptr<ShaderLambertLightning>> load(const ShaderLoader &loader) {
+    static std::optional<std::shared_ptr<ShaderLights>> load(const ShaderLoader &loader) {
         auto maybeVertexShader = loader.loadVertex("lightning.glsl");
         if (!maybeVertexShader.has_value()) {
             return {};
@@ -133,8 +133,8 @@ public:
             return {};
         }
 
-        auto inner = ShaderLambertLightning(maybeShaderProgram.value());
-        auto self = std::make_shared<ShaderLambertLightning>(std::move(inner));
+        auto inner = ShaderLights(maybeShaderProgram.value());
+        auto self = std::make_shared<ShaderLights>(std::move(inner));
         return std::move(self);
     }
 

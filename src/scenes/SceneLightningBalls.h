@@ -10,12 +10,12 @@
 #include "../Camera.h"
 #include "../Projection.h"
 #include "../GLWindow.h"
-#include "../shaders/ShaderLambertLightning.h"
+#include "../shaders/ShaderLights.h"
 #include "BasicScene.h"
 
 class SceneLightningBalls : public BasicScene {
     Sphere sphere;
-    std::shared_ptr<ShaderLambertLightning> shaderLightning;
+    std::shared_ptr<ShaderLights> shaderLightning;
     std::vector<glm::mat4> ballsModel;
 
     void makeBalls() {
@@ -36,7 +36,7 @@ public:
     explicit SceneLightningBalls(const std::shared_ptr<GLWindow> &window,
                                  const ShaderLoader &loader)
             : BasicScene(window), sphere(), ballsModel() {
-        auto shader = ShaderLambertLightning::load(loader).value();
+        auto shader = ShaderLights::load(loader).value();
         camera.attach(shader);
         camera.projection()->attach(shader);
         shaderLightning = std::move(shader);

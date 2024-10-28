@@ -210,6 +210,13 @@ public:
         }) ;
     }
 
+    void bindParam(const char* name, int32_t val) {
+        static_assert(sizeof(int32_t) == sizeof(GLint));
+        bindInner(name, [val](GLint id) {
+            glUniform1i(id, val);
+        });
+    }
+
     bool operator==(const ShaderProgram &rhs) const {
         return program_id == rhs.program_id;
     }

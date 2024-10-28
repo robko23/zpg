@@ -74,10 +74,10 @@ class ShaderLights
         : public Shader,
           public Observer<ViewMatrix>, public Observer<ProjectionMatrix> {
 private:
-    struct alignas(16) LambertLight {
+    struct alignas(16) Light {
         glm::vec3 position;
         float _padding;
-        glm::vec4 diffuse;
+        glm::vec4 color;
         float intensity;
 //        float _padding;
     };
@@ -85,7 +85,12 @@ private:
     ShaderProgram program;
     ViewMatrix viewMatrix;
     ProjectionMatrix projectionMatrix;
-    SSBO<LambertLight> lights;
+    SSBO<Light> lights;
+    glm::vec4 ambientColor = glm::vec4(0.1, 0.1, 0.1, 1.0);
+    int32_t flags = 0; // Lightning features, see fragment/lights.glsl
+
+    const int32_t FLAG_AMBIENT = 1 << 0;
+    const int32_t FLAG_DIFFUSE = 1 << 1;
 
     static inline void assertNoError() {
 #ifdef DEBUG_ASSERTIONS
@@ -98,10 +103,11 @@ private:
                                                    viewMatrix(glm::mat4(1)),
                                                    projectionMatrix(glm::mat4(1)),
                                                    lights(0) {
-        lights.objects().emplace_back(LambertLight{
+        lights.objects().emplace_back(Light{
                 .position = glm::vec3(0, 10, 0),
                 ._padding = 0,
-                .diffuse = glm::vec4(0.385, 0.647, 0.812, 1.0),
+//                .color = glm::vec4(0.385, 0.647, 0.812, 1.0),
+                .color = glm::vec4(1, 0, 0, 1.0),
                 .intensity = 0.1,
         });
         lights.send();
@@ -118,11 +124,11 @@ public:
     }
 
     static std::optional<std::shared_ptr<ShaderLights>> load(const ShaderLoader &loader) {
-        auto maybeVertexShader = loader.loadVertex("lightning.glsl");
+        auto maybeVertexShader = loader.loadVertex("lights.glsl");
         if (!maybeVertexShader.has_value()) {
             return {};
         }
-        auto maybeFragmentShader = loader.loadFragment("lambertLight.glsl");
+        auto maybeFragmentShader = loader.loadFragment("lights.glsl");
         if (!maybeFragmentShader.has_value()) {
             return {};
         }
@@ -136,6 +142,31 @@ public:
         auto inner = ShaderLights(maybeShaderProgram.value());
         auto self = std::make_shared<ShaderLights>(std::move(inner));
         return std::move(self);
+    }
+
+    void setAmbientEnabled(bool enabled) {
+        if (enabled) {
+            flags |= FLAG_AMBIENT;
+        } else {
+            flags &= ~FLAG_AMBIENT;
+        }
+    }
+
+    void setDiffuseEnabled(bool enabled) {
+        if (enabled) {
+            flags |= FLAG_DIFFUSE;
+        } else {
+            flags &= ~FLAG_DIFFUSE;
+        }
+    }
+
+    void setDiffuseColor(glm::vec3 color) {
+        lights.objects()[0].color = glm::vec4(color, 1);
+        lights.send();
+    }
+
+    void setAmbientColor(glm::vec3 color) {
+        ambientColor = glm::vec4(color, 1);
     }
 
     void modelMatrix(glm::mat4 mat) {
@@ -157,7 +188,8 @@ public:
         program.bindParam("normalMatrix", glm::mat3(1));
         program.bindParam("viewMatrix", viewMatrix.viewMatrix);
         program.bindParam("projectionMatrix", projectionMatrix.projectionMatrix);
-        program.bindParam("ambient", glm::vec4(0.1, 0.1, 0.1, 1.0));
+        program.bindParam("ambient", ambientColor);
+        program.bindParam("flags", flags);
     }
 
     void unbind() override {

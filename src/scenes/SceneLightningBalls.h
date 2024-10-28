@@ -18,6 +18,10 @@ class SceneLightningBalls : public BasicScene {
     std::shared_ptr<ShaderLights> shaderLightning;
     std::vector<glm::mat4> ballsModel;
 
+    bool ambientEnabled = true;
+    bool diffuseEnabled = true;
+    float ambientColor[3] = {0.1, 0.1, 0.1};
+
     void makeBalls() {
         ballsModel.emplace_back(TransformationBuilder().moveX(3).moveZ(3).build());
         ballsModel.emplace_back(TransformationBuilder().moveX(-3).moveZ(3).build());
@@ -27,9 +31,6 @@ class SceneLightningBalls : public BasicScene {
 
 protected:
     void handleKeyInput() override {
-//        if(window->isPressedAndClear(GLFW_KEY_R)) {
-//            shaderLightning->addLight();
-//        }
     }
 
 public:
@@ -44,9 +45,14 @@ public:
         camera.setPosition(glm::vec3(0, 10, 0));
         camera.setYaw(0);
         camera.setPitch(-90);
+
+        shaderLightning->setAmbientColor(
+                glm::vec3(ambientColor[0], ambientColor[1], ambientColor[2]));
     }
 
     void renderScene() override {
+        shaderLightning->setAmbientEnabled(ambientEnabled);
+        shaderLightning->setDiffuseEnabled(diffuseEnabled);
         shaderLightning->bind();
 
         for (const auto &item: ballsModel) {
@@ -55,6 +61,17 @@ public:
         }
 
         shaderLightning->unbind();
+    }
+
+    void renderMenu() override {
+        ImGui::Begin("Lights settings");
+        ImGui::Checkbox("Ambient", &ambientEnabled);
+        ImGui::Checkbox("Diffuse", &diffuseEnabled);
+        if (ImGui::ColorEdit3("Ambient color", ambientColor)) {
+            shaderLightning->setAmbientColor(
+                    glm::vec3(ambientColor[0], ambientColor[1], ambientColor[2]));
+        }
+        ImGui::End();
     }
 
     const char* getId() override {

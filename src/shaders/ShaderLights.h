@@ -154,22 +154,25 @@ public:
         return std::move(self);
     }
 
-#define BITFLAG(FUNC_NAME, FLAG_NAME) \
-    void FUNC_NAME(bool enabled) { \
+#define BITFLAG(SET_FUNC_NAME, HAS_FUNC_NAME, FLAG_NAME) \
+    void SET_FUNC_NAME(bool enabled) { \
         if (enabled) { \
             flags |= (FLAG_NAME); \
         } else { \
             flags &= ~(FLAG_NAME); \
         } \
-    }
+    } \
+    [[nodiscard]] inline bool HAS_FUNC_NAME() { \
+        return FLAG_NAME; \
+    } \
 
-    BITFLAG(setAmbientEnabled, FLAG_AMBIENT);
+    BITFLAG(setAmbientEnabled, hasAmbient, FLAG_AMBIENT);
 
-    BITFLAG(setDiffuseEnabled, FLAG_DIFFUSE);
+    BITFLAG(setDiffuseEnabled, hasDiffuse, FLAG_DIFFUSE);
 
-    BITFLAG(setSpecularEnabled, FLAG_SPECULAR);
+    BITFLAG(setSpecularEnabled, hasSpecular, FLAG_SPECULAR);
 
-    BITFLAG(setHalfwayEnabled, FLAG_HALFWAY);
+    BITFLAG(setHalfwayEnabled, hasHalfway, FLAG_HALFWAY);
 
 #undef BITFLAG
 

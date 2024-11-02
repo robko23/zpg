@@ -44,9 +44,7 @@ public:
         camera.projection()->attach(shader);
         shaderLightning = std::move(shader);
         makeBalls();
-        camera.setPosition(glm::vec3(0, 10, 0));
-        camera.setYaw(0);
-        camera.setPitch(-90);
+        resetCamera();
 
         shaderLightning->setAmbientColor(
                 glm::vec3(ambientColor[0], ambientColor[1], ambientColor[2]));
@@ -66,6 +64,13 @@ public:
         }
 
         shaderLightning->unbind();
+    }
+
+    void resetCamera() {
+        camera.setPosition(glm::vec3(0, 10, 0));
+        camera.setYaw(0);
+        camera.setPitch(-90);
+        camera.projection()->setFov(60);
     }
 
     void renderMenu() override {
@@ -89,6 +94,10 @@ public:
         if (ImGui::ColorEdit3("Ambient color", ambientColor)) {
             shaderLightning->setAmbientColor(
                     glm::vec3(ambientColor[0], ambientColor[1], ambientColor[2]));
+        }
+
+        if (ImGui::Button("Reset camera")) {
+            resetCamera();
         }
         ImGui::End();
     }

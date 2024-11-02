@@ -2,7 +2,7 @@
 
 #include "../Camera.h"
 #include "Shader.h"
-#include "../ShaderLoader.h"
+#include "../ShaderLoaderV2.h"
 #include <optional>
 #include <memory>
 #include "glm/mat4x4.hpp"
@@ -133,7 +133,7 @@ public:
             lights(std::move(other.lights)) {
     }
 
-    static std::optional<std::shared_ptr<ShaderLights>> load(const ShaderLoader &loader) {
+    static std::optional<std::shared_ptr<ShaderLights>> load(const ShaderLoaderV2 &loader) {
         auto maybeVertexShader = loader.loadVertex("lights.glsl");
         if (!maybeVertexShader.has_value()) {
             return {};

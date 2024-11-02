@@ -2,7 +2,7 @@
 
 #include "../Camera.h"
 #include "Shader.h"
-#include "../ShaderLoader.h"
+#include "../ShaderLoaderV2.h"
 #include <optional>
 #include <memory>
 #include "glm/mat4x4.hpp"
@@ -29,7 +29,7 @@ public:
                                                viewMatrix(other.viewMatrix),
                                                projectionMatrix(other.projectionMatrix) {}
 
-    static std::optional<std::shared_ptr<ShaderBasic>> load(const ShaderLoader &loader) {
+    static std::optional<std::shared_ptr<ShaderBasic>> load(const ShaderLoaderV2 &loader) {
         auto maybeVertexShader = loader.loadVertex("basic.glsl");
         if (!maybeVertexShader.has_value()) {
             return {};

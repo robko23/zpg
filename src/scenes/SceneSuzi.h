@@ -17,7 +17,7 @@ class SceneSuzi : public BasicScene {
 
 public:
     explicit SceneSuzi(
-            const std::shared_ptr<GLWindow> &window, const ShaderLoader &loader)
+            const std::shared_ptr<GLWindow> &window, const ShaderLoaderV2 &loader)
             : BasicScene(window), suzi() {
         auto shader = ShaderBasic::load(loader).value();
         camera.attach(shader);

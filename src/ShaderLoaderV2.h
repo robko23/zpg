@@ -2,8 +2,8 @@
 // Created by robko on 10/14/24.
 //
 
-#ifndef ZPG_SHADERLOADER_H
-#define ZPG_SHADERLOADER_H
+#ifndef ZPG_SHADERLOADERV2_H
+#define ZPG_SHADERLOADERV2_H
 
 #include "shaders/Shader.h"
 #include <optional>
@@ -11,7 +11,7 @@
 #include <iostream>
 #include <fstream>
 
-class ShaderLoader {
+class ShaderLoaderV2 {
     std::filesystem::path basePath;
 
     std::optional<std::string> load(const char* type, const char* path) const {
@@ -29,7 +29,7 @@ class ShaderLoader {
     }
 
 public:
-    explicit ShaderLoader(const std::string &basePath) : basePath(basePath) {}
+    explicit ShaderLoaderV2(const std::string &basePath) : basePath(basePath) {}
 
     std::optional<FragmentShader> loadFragment(const char* path) const {
         auto content = load("fragment", path);
@@ -52,4 +52,4 @@ public:
 };
 
 
-#endif //ZPG_SHADERLOADER_H
+#endif //ZPG_SHADERLOADERV2_H

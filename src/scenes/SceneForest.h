@@ -11,7 +11,7 @@
 #include <memory>
 #include "../assertions.h"
 #include "../shaders/ShaderBasic.h"
-#include "../ShaderLoader.h"
+#include "../ShaderLoaderV2.h"
 #include <memory>
 #include "../drawable/Tree.h"
 #include "imgui.h"
@@ -85,7 +85,7 @@ private:
     }
 
 public:
-    explicit SceneForest(const std::shared_ptr<GLWindow> &window, const ShaderLoader &loader)
+    explicit SceneForest(const std::shared_ptr<GLWindow> &window, const ShaderLoaderV2 &loader)
             : BasicScene(window) {
         treeTrans = scatterObjects(numberOfTrees);
         bushesTrans = scatterObjects(numberOfBushes);

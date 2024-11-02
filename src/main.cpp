@@ -7,7 +7,7 @@
 #include "GLWindow.h"
 #include "GLFWContext.h"
 #include "gl_info.h"
-#include "ShaderLoader.h"
+#include "ShaderLoaderV2.h"
 
 #include "scenes/SceneForest.h"
 #include "scenes/SceneFpsDisplay.h"
@@ -22,7 +22,7 @@ int main() {
         auto window = GLWindow::create("ZPG").value();
 
         window->inContext([&window]() -> void {
-            auto shaderLoader = ShaderLoader("./assets/shaders");
+            auto shaderLoader = ShaderLoaderV2("./assets/shaders");
             print_gl_info();
             auto forest = std::make_shared<SceneForest>(window, shaderLoader);
             auto forest2 = std::make_shared<SceneForest>(window, shaderLoader);

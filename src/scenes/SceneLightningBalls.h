@@ -37,7 +37,7 @@ protected:
 
 public:
     explicit SceneLightningBalls(const std::shared_ptr<GLWindow> &window,
-                                 const ShaderLoader &loader)
+                                 const ShaderLoaderV2 &loader)
             : BasicScene(window), sphere(), ballsModel() {
         auto shader = ShaderLights::load(loader).value();
         camera.attach(shader);

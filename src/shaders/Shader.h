@@ -14,6 +14,7 @@
 #include "../drawable/Drawable.h"
 #include <memory>
 #include "../assertions.h"
+#include "ShaderLoader.h"
 
 static inline int getCurrentProgram() { // NOLINT(*-reserved-identifier)
     static_assert(sizeof(GLint) == sizeof(int));
@@ -86,7 +87,7 @@ DEFINE_SHADER(VertexShader, GL_VERTEX_SHADER)
 
 #undef DEFINE_SHADER
 
-class ShaderProgram {
+class ShaderProgram: public ShaderLoader {
 private:
     GLuint program_id;
     bool bound;

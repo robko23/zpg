@@ -15,7 +15,7 @@ class SceneTriangle : public Scene {
     bool running = true;
 public:
 
-    explicit SceneTriangle(const std::shared_ptr<GLWindow> &window, const ShaderLoader &loader)
+    explicit SceneTriangle(const std::shared_ptr<GLWindow> &window, const ShaderLoaderV2 &loader)
             : window(window) {
         shader = ShaderBasic::load(loader).value();
     }

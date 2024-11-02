@@ -4,6 +4,7 @@
 
 #ifndef ZPG_TRIANGLE_H
 #define ZPG_TRIANGLE_H
+
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
@@ -13,9 +14,10 @@
 class Triangle : public Drawable {
 private:
     inline static float points[] = {
-            0.0f, 0.5f, 0.0f,
-            0.5f, -0.5f, 0.0f,
-            -0.5f, -0.5f, 0.0f
+            -.5f, -.5f, .5f, 1, 1, 1, 0, 1,
+            -.5f, .5f, .5f, 1, 1, 0, 0, 1,
+            .5f, .5f, .5f, 1, 0, 0, 0, 1,
+            .5f, -.5f, .5f, 1, 0, 1, 0, 1,
     };
     GLuint vbo = 0;
     GLuint vao = 0;
@@ -30,9 +32,17 @@ public:
         //Vertex Array Object (VAO)
         glGenVertexArrays(1, &vao); //generate the VAO
         glBindVertexArray(vao); //bind the VAO
+
         glEnableVertexAttribArray(0); //enable vertex attributes
+        glEnableVertexAttribArray(1); //enable normal attributes
         glBindBuffer(GL_ARRAY_BUFFER, vbo);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (GLvoid*) 0);
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float),
+                              (GLvoid*) (3 * sizeof(float)));
+
+//        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+//        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
 
         DEBUG_ASSERT(0 != vbo);
         DEBUG_ASSERT(0 != vao);
@@ -42,12 +52,6 @@ public:
         glBindVertexArray(this->vao);
         glDrawArrays(GL_TRIANGLES, 0, 3);
     }
-
-//    void draw(ShaderProgram &shader) override {
-//        shader.withShader([this]() -> void {
-//            this->draw_raw();
-//        });
-//    }
 };
 
 

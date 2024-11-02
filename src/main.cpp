@@ -14,6 +14,7 @@
 #include "scenes/SceneSwitcher.h"
 #include "scenes/SceneSuzi.h"
 #include "scenes/SceneLightningBalls.h"
+#include "scenes/SceneTriangle.h"
 
 int main() {
     GLFWcontext::inContext([]() {
@@ -34,6 +35,7 @@ int main() {
             mainScene.addScene(fps);
             mainScene.addScene(suziScene);
             mainScene.addScene(ballsScene);
+            mainScene.addScene(std::make_shared<SceneTriangle>(window, shaderLoader));
 
             while (!window->shouldClose()) {
                 if (mainScene.shouldExit()) {

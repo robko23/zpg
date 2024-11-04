@@ -19,18 +19,16 @@ private:
     // https://www.khronos.org/opengl/wiki/Interface_Block_(GLSL)#Shader_storage_blocks
     // https://www.khronos.org/opengl/wiki/Shader_Storage_Buffer_Object
     GLuint m_ssboId = 0;
-    GLuint m_binding;
     std::vector<Inner> m_objects;
 public:
     SSBO(const SSBO &other) = delete;
 
     SSBO(SSBO &&other) noexcept: m_ssboId(other.m_ssboId),
-                                 m_binding(other.m_binding),
                                  m_objects(std::move(other.m_objects)) {
         other.m_ssboId = 0;
     }
 
-    explicit SSBO(GLuint binding) : m_binding(binding) {
+    explicit SSBO() {
         glGenBuffers(1, &m_ssboId);
         DEBUG_ASSERT(0 != m_ssboId);
     }
@@ -53,9 +51,9 @@ public:
     }
 
     // Binds the buffer to the binding used in GLSL shader
-    void bind() {
+    void bind(GLuint bindIndex) {
         DEBUG_ASSERT(0 != m_ssboId);
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, m_binding, m_ssboId);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, bindIndex, m_ssboId);
         gl::assertNoError();
     }
 
@@ -104,22 +102,22 @@ private:
     explicit ShaderLights(ShaderProgram program) : program(std::move(program)),
                                                    viewMatrix(glm::mat4(1)),
                                                    projectionMatrix(glm::mat4(1)),
-                                                   lights(0) {
+                                                   lights() {
         lights.objects().emplace_back(Light{
-                .position = glm::vec3(0, 10, 0),
+                .position = glm::vec3(0, 4, 0),
                 ._padding = 0,
 //                .color = glm::vec4(0.385, 0.647, 0.812, 1.0),
                 .color = glm::vec4(1, 0, 0, 1.0),
                 .intensity = 0.1,
         });
 
-        lights.objects().emplace_back(Light{
-                .position = glm::vec3(0, -10, 0),
-                ._padding = 0,
-//                .color = glm::vec4(0.385, 0.647, 0.812, 1.0),
-                .color = glm::vec4(0, 1, 0, 1.0),
-                .intensity = 0.1,
-        });
+//        lights.objects().emplace_back(Light{
+//                .position = glm::vec3(0, -10, 0),
+//                ._padding = 0,
+////                .color = glm::vec4(0.385, 0.647, 0.812, 1.0),
+//                .color = glm::vec4(0, 1, 0, 1.0),
+//                .intensity = 0.1,
+//        });
         lights.send();
     }
 
@@ -199,7 +197,7 @@ public:
     }
 
     void bind() override {
-        lights.bind();
+        lights.bind(0);
         program.bind();
         // vertex uniforms
         program.bindParam("normalMatrix", glm::mat3(1));

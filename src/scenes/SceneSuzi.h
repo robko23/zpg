@@ -10,26 +10,35 @@
 #include "../Camera.h"
 #include "../Projection.h"
 #include "BasicScene.h"
+#include "../shaders/ShaderLights.h"
 
 class SceneSuzi : public BasicScene {
     Suzi suzi;
-    std::shared_ptr<ShaderBasic> shaderBasic;
+//    std::shared_ptr<ShaderBasic> shaderBasic;
+    std::shared_ptr<ShaderLights> shader;
 
 public:
     explicit SceneSuzi(
             const std::shared_ptr<GLWindow> &window, const ShaderLoaderV2 &loader)
             : BasicScene(window), suzi() {
-        auto shader = ShaderBasic::load(loader).value();
+        shader = std::move(ShaderLights::load(loader).value());
         camera.attach(shader);
         camera.projection()->attach(shader);
-        shaderBasic = std::move(shader);
+
+        shader->setAmbientColor(
+                glm::vec3(0.1, 0.1, 0.1));
+        shader->setAmbientEnabled(true);
+        shader->setDiffuseEnabled(true);
+        shader->setSpecularEnabled(true);
+        shader->setHalfwayEnabled(true);
     }
 
     void renderScene() override {
-        shaderBasic->bind();
-        shaderBasic->modelMatrix(glm::mat4(1));
+        shader->bind();
+        shader->modelMatrix(glm::mat4(1));
+        shader->cameraPosition(camera.getPosition());
         suzi.draw();
-        shaderBasic->unbind();
+        shader->unbind();
     }
 
     const char* getId() override {

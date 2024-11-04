@@ -3,7 +3,16 @@ project(zpg)
 
 set(CMAKE_CXX_STANDARD 23)
 
-file(GLOB_RECURSE SOURCES "src/**.cpp" "src/**.hpp" "src/**.h" "src/**.c")
+file(GLOB_RECURSE SOURCES
+        "src/**.cpp"
+        "src/**/*.cpp"
+        "src/**.hpp"
+        "src/**/*.hpp"
+        "src/**.h"
+        "src/**/*.h"
+        "src/**.c"
+        "src/**/*.c"
+)
 
 file(GLOB IMGUI_SOURCES "vendor/imgui/*.h" ,
         "vendor/imgui/*.cpp" ,
@@ -43,6 +52,6 @@ endif ()
 
 add_executable(zpg ${SOURCES} ${IMGUI_SOURCES})
 
-target_include_directories(zpg PRIVATE vendor/imgui vendor/imgui/backends )
+target_include_directories(zpg PRIVATE vendor/imgui vendor/imgui/backends)
 
 target_link_libraries(zpg PRIVATE glfw ${OPENGL_gl_LIBRARY} glew Backward::Interface bfd dl)

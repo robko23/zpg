@@ -62,7 +62,7 @@ void main() {
             float specular_strength = 0.5;
             if (has_halfway) {
                 // Blinn phong
-                vec3 halfwayDir = normalize(lightDir - viewDir);
+                vec3 halfwayDir = normalize(lightDir + viewDir);
                 spec = pow(max(dot(normal_normalized, halfwayDir), 0.0), 64);
             } else {
                 // Phong

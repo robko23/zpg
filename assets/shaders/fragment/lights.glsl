@@ -19,6 +19,7 @@ struct Light {
     // https://www.khronos.org/opengl/wiki/Interface_Block_(GLSL)#Memory_layout
     vec4 color;
     float intensity;
+    float reflectiveness;
 };
 
 uniform vec4 ambientColor;
@@ -31,7 +32,6 @@ layout (std430, binding = 0) buffer Lights {
 
 void main() {
     vec3 local_pos = out_world_pos.xyz / out_world_pos.w;
-    vec3 normal_normalized = normalize(out_world_normal);
 
     bool has_ambient = (flags & (1 << 0)) != 0;
     bool has_diffuse = (flags & (1 << 1)) != 0;
@@ -50,7 +50,7 @@ void main() {
         vec3 viewDir = normalize(cameraPosition - local_pos);
         if (has_diffuse) {
             // Lambert
-            float diffuse_grey = max(dot(lightVector, normal_normalized), 0.0);
+            float diffuse_grey = max(dot(lightVector, out_world_normal), 0.0);
             vec4 diffuse_color = diffuse_grey * lights[i].color;
             vec4 diffuse_intensity = diffuse_color * lights[i].intensity;
 
@@ -58,19 +58,21 @@ void main() {
         }
 
         if (has_specular) {
-            float spec;
-            float specular_strength = 0.5;
-            if (has_halfway) {
-                // Blinn phong
-                vec3 halfwayDir = normalize(lightDir + viewDir);
-                spec = pow(max(dot(normal_normalized, halfwayDir), 0.0), 64);
-            } else {
-                // Phong
-                vec3 reflect_dir = reflect(-lightDir, normal_normalized);
-                spec = pow(max(dot(viewDir, reflect_dir), 0.0), 32);
-            }
+            if (dot(out_world_normal, lightDir) >= 0.0) {
+                float spec;
+                float specular_strength = 0.5;
+                if (has_halfway) {
+                    // Blinn phong
+                    vec3 halfwayDir = normalize(lightDir + viewDir);
+                    spec = pow(max(dot(out_world_normal, halfwayDir), 0.0), lights[i].reflectiveness);
+                } else {
+                    // Phong
+                    vec3 reflect_dir = reflect(-lightDir, out_world_normal);
+                    spec = pow(max(dot(viewDir, reflect_dir), 0.0), lights[i].reflectiveness);
+                }
 
-            frag_colour += specular_strength * spec * vec4(1);
+                frag_colour += specular_strength * spec * vec4(1);
+            }
         }
     }
 }

@@ -77,6 +77,7 @@ private:
         float _padding;
         glm::vec4 color;
         float intensity;
+        float reflectiveness;
 //        float _padding;
     };
 
@@ -107,8 +108,10 @@ private:
                 .position = glm::vec3(0, 4, 0),
                 ._padding = 0,
 //                .color = glm::vec4(0.385, 0.647, 0.812, 1.0),
-                .color = glm::vec4(1, 0, 0, 1.0),
+//                .color = glm::vec4(1, 0, 0, 1.0),
+                .color = glm::vec4(1, 1, 1, 1),
                 .intensity = 0.1,
+                .reflectiveness = 1
         });
 
 //        lights.objects().emplace_back(Light{
@@ -164,6 +167,7 @@ public:
         return FLAG_NAME; \
     } \
 
+
     BITFLAG(setAmbientEnabled, hasAmbient, FLAG_AMBIENT);
 
     BITFLAG(setDiffuseEnabled, hasDiffuse, FLAG_DIFFUSE);
@@ -200,7 +204,6 @@ public:
         lights.bind(0);
         program.bind();
         // vertex uniforms
-        program.bindParam("normalMatrix", glm::mat3(1));
         program.bindParam("viewMatrix", viewMatrix.viewMatrix);
         program.bindParam("projectionMatrix", projectionMatrix.projectionMatrix);
 

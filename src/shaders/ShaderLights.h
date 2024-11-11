@@ -82,8 +82,6 @@ private:
     };
 
     ShaderProgram program;
-    ViewMatrix viewMatrix;
-    ProjectionMatrix projectionMatrix;
     SSBO<Light> lights;
     glm::vec4 ambientColor = glm::vec4(0.1, 0.1, 0.1, 1.0);
     int32_t flags = 0; // Lightning features, see fragment/lights.glsl
@@ -101,8 +99,6 @@ private:
     }
 
     explicit ShaderLights(ShaderProgram program) : program(std::move(program)),
-                                                   viewMatrix(glm::mat4(1)),
-                                                   projectionMatrix(glm::mat4(1)),
                                                    lights() {
         lights.objects().emplace_back(Light{
                 .position = glm::vec3(0, 4, 0),
@@ -124,13 +120,17 @@ private:
         lights.send();
     }
 
+    void flagsUpdated() {
+        this->bind();
+        program.bindParam("flags", flags);
+        this->unbind();
+    }
+
 public:
     ShaderLights(const ShaderLights &other) = delete;
 
     ShaderLights(ShaderLights &&other) noexcept:
             program(std::move(other.program)),
-            viewMatrix(other.viewMatrix),
-            projectionMatrix(other.projectionMatrix),
             lights(std::move(other.lights)) {
     }
 
@@ -161,7 +161,8 @@ public:
             flags |= (FLAG_NAME); \
         } else { \
             flags &= ~(FLAG_NAME); \
-        } \
+        }                                                \
+        flagsUpdated();                                                \
     } \
     [[nodiscard]] inline bool HAS_FUNC_NAME() { \
         return FLAG_NAME; \
@@ -179,7 +180,10 @@ public:
 #undef BITFLAG
 
     void setAmbientColor(glm::vec3 color) {
+        this->bind();
         ambientColor = glm::vec4(color, 1);
+        program.bindParam("ambientColor", ambientColor);
+        this->unbind();
     }
 
     void modelMatrix(glm::mat4 mat) {
@@ -193,23 +197,20 @@ public:
     }
 
     void update(const ViewMatrix &action) override {
-        viewMatrix = action;
+        this->bind();
+        program.bindParam("viewMatrix", action.viewMatrix);
+        this->unbind();
     }
 
     void update(const ProjectionMatrix &action) override {
-        projectionMatrix = action;
+        this->bind();
+        program.bindParam("projectionMatrix", action.projectionMatrix);
+        this->unbind();
     }
 
     void bind() override {
         lights.bind(0);
         program.bind();
-        // vertex uniforms
-        program.bindParam("viewMatrix", viewMatrix.viewMatrix);
-        program.bindParam("projectionMatrix", projectionMatrix.projectionMatrix);
-
-        // fragment uniforms
-        program.bindParam("ambientColor", ambientColor);
-        program.bindParam("flags", flags);
     }
 
     void unbind() override {

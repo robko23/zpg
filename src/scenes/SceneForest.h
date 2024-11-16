@@ -10,7 +10,7 @@
 #include "../Transformation.h"
 #include <memory>
 #include "../assertions.h"
-#include "../shaders/ShaderBasic.h"
+#include "../shaders/ShaderLights.h"
 #include "../ShaderLoaderV2.h"
 #include <memory>
 #include "../drawable/Tree.h"
@@ -26,7 +26,7 @@ class SceneForest : public BasicScene {
 private:
     Tree tree;
     Bush bush;
-    std::shared_ptr<ShaderBasic> shaderBasic;
+    std::shared_ptr<ShaderLights> shaderLights;
 
     float maxScatterRadius = 10;
 
@@ -89,27 +89,36 @@ public:
             : BasicScene(window) {
         treeTrans = scatterObjects(numberOfTrees);
         bushesTrans = scatterObjects(numberOfBushes);
-        auto shader = ShaderBasic::load(loader).value();
+        auto shader = ShaderLights::load(loader).value();
         camera.attach(shader);
         camera.projection()->attach(shader);
 
-        shaderBasic = std::move(shader);
+        shader->applyBlinnPhong();
+
+        auto light = Light(glm::vec3(0, 10, 0), glm::vec3(1), glm::vec3(0, 0.008, 0.008),
+                           glm::vec4(1));
+        shader->addLight(light);
+
+        auto material = Material(glm::vec4(0.13), glm::vec4(0.419, 0.678, 0.274, 1), glm::vec4(0.047, 1, 0, 1), 64);
+        shader->setMaterial(material);
+
+        shaderLights = std::move(shader);
     }
 
     void renderScene() override {
-        shaderBasic->bind();
+        shaderLights->bind();
 
         for (const auto &item: treeTrans) {
-            shaderBasic->modelMatrix(item);
+            shaderLights->modelMatrix(item);
             tree.draw();
         }
 
         for (const auto &item: bushesTrans) {
-            shaderBasic->modelMatrix(item);
+            shaderLights->modelMatrix(item);
             bush.draw();
         }
 
-        shaderBasic->unbind();
+        shaderLights->unbind();
     }
 
     const char* getId() override {

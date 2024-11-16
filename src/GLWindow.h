@@ -314,8 +314,8 @@ public:
     }
 
     static std::optional<std::shared_ptr<GLWindow>> create(const char* title) {
-        int startWidth = 800;
-        int startHeight = 600;
+        int startWidth = 1200;
+        int startHeight = 800;
         GLFWwindow* window = glfwCreateWindow(startWidth, startHeight, title, nullptr, nullptr);
         if (nullptr == window) {
             std::cerr << "ERROR: could not create GLFW window. are you in glfw context?"

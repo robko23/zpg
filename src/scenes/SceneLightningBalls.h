@@ -22,7 +22,6 @@ class SceneLightningBalls : public BasicScene {
     bool diffuseEnabled = true;
     bool specularEnabled = true;
     bool blinnPhong = true;
-    float ambientColor[3] = {0.1, 0.1, 0.1};
 
     void makeBalls() {
         ballsModel.emplace_back(TransformationBuilder().moveX(3).moveZ(3).build());
@@ -46,17 +45,18 @@ public:
         makeBalls();
         resetCamera();
 
-        shaderLightning->setAmbientColor(
-                glm::vec3(ambientColor[0], ambientColor[1], ambientColor[2]));
         shaderLightning->setAmbientEnabled(ambientEnabled);
         shaderLightning->setDiffuseEnabled(diffuseEnabled);
         shaderLightning->setSpecularEnabled(specularEnabled);
         shaderLightning->setHalfwayEnabled(blinnPhong);
+        auto light = Light(glm::vec3(0), glm::vec3(0), glm::vec3(0), glm::vec4(1));
+        shaderLightning->addLight(light);
+        auto material = Material(glm::vec4(0.1), glm::vec4(0.5), glm::vec4(0.7), 32);
+        shaderLightning->setMaterial(material);
     }
 
     void renderScene() override {
         shaderLightning->bind();
-        shaderLightning->cameraPosition(camera.getPosition());
 
         for (const auto &item: ballsModel) {
             shaderLightning->modelMatrix(item);
@@ -91,10 +91,10 @@ public:
             shaderLightning->setHalfwayEnabled(blinnPhong);
         }
 
-        if (ImGui::ColorEdit3("Ambient color", ambientColor)) {
-            shaderLightning->setAmbientColor(
-                    glm::vec3(ambientColor[0], ambientColor[1], ambientColor[2]));
-        }
+//        if (ImGui::ColorEdit3("Ambient color", ambientColor)) {
+//            shaderLightning->setAmbientColor(
+//                    glm::vec3(ambientColor[0], ambientColor[1], ambientColor[2]));
+//        }
 
         if (ImGui::Button("Reset camera")) {
             resetCamera();

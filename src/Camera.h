@@ -12,11 +12,12 @@
 #include "Projection.h"
 #include "Observer.h"
 
-struct ViewMatrix {
+struct CameraProperties {
     glm::mat4 viewMatrix;
+    glm::vec3 cameraPosition;
 };
 
-class Camera : public Observable<ViewMatrix> {
+class Camera : public Observable<CameraProperties> {
 private:
     glm::vec3 m_eye;
     glm::vec3 m_target;
@@ -34,7 +35,7 @@ private:
 
     void handleChange() {
         recalculate();
-        notify(ViewMatrix{.viewMatrix = viewMatrix});
+        notify(CameraProperties{.viewMatrix = viewMatrix, .cameraPosition = m_eye});
     }
 
     void recalculate() {
@@ -62,7 +63,9 @@ private:
 public:
     explicit Camera(double sensitivity, const std::shared_ptr<GLWindow> &window,
                     glm::vec3 initialPosition = glm::vec3(-3, 3, -3))
-            : Observable<ViewMatrix>(ViewMatrix{.viewMatrix = glm::mat4(1)}), m_eye(initialPosition),
+            : Observable<CameraProperties>(
+            CameraProperties{.viewMatrix = glm::mat4(1), .cameraPosition = initialPosition}),
+              m_eye(initialPosition),
               m_target(0), m_up(0, 1, 0), sensitivity(sensitivity),
               window(window) {
         perspectiveProjection = std::make_shared<PerspectiveProjection>();

@@ -25,18 +25,17 @@ public:
         camera.attach(shader);
         camera.projection()->attach(shader);
 
-        shader->setAmbientColor(
-                glm::vec3(0.1, 0.1, 0.1));
-        shader->setAmbientEnabled(true);
-        shader->setDiffuseEnabled(true);
-        shader->setSpecularEnabled(true);
-        shader->setHalfwayEnabled(true);
+        shader->applyBlinnPhong();
+
+        auto light = Light(glm::vec3(0), glm::vec3(0), glm::vec3(0), glm::vec4(1));
+        shader->addLight(light);
+        auto material = Material(glm::vec4(0.1), glm::vec4(0.1), glm::vec4(0.1), 32);
+        shader->setMaterial(material);
     }
 
     void renderScene() override {
         shader->bind();
         shader->modelMatrix(glm::mat4(1));
-        shader->cameraPosition(camera.getPosition());
         suzi.draw();
         shader->unbind();
     }

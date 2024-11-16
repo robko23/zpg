@@ -15,6 +15,7 @@
 #include "scenes/SceneSuzi.h"
 #include "scenes/SceneLightningBalls.h"
 #include "scenes/SceneTriangle.h"
+#include "scenes/SceneTreeLights.h"
 
 int main() {
     GLFWcontext::inContext([]() {
@@ -36,6 +37,7 @@ int main() {
             mainScene.addScene(suziScene);
             mainScene.addScene(ballsScene);
             mainScene.addScene(std::make_shared<SceneTriangle>(window, shaderLoader));
+            mainScene.addScene(std::make_shared<SceneTreeLights>(window, shaderLoader));
 
             while (!window->shouldClose()) {
                 if (mainScene.shouldExit()) {

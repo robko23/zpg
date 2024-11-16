@@ -15,13 +15,7 @@
 #include <memory>
 #include "../assertions.h"
 #include "ShaderLoader.h"
-
-static inline int getCurrentProgram() { // NOLINT(*-reserved-identifier)
-    static_assert(sizeof(GLint) == sizeof(int));
-    GLint prog = 0;
-    glGetIntegerv(GL_CURRENT_PROGRAM, &prog);
-    return prog;
-}
+#include "../gl_utils.h"
 
 template<typename Derived>
 class ShaderBase {
@@ -137,7 +131,7 @@ public:
     inline void bind() {
         bound = true;
 #ifdef DEBUG_ASSERTIONS
-        DEBUG_ASSERTF(getCurrentProgram() == 0,
+        DEBUG_ASSERTF(gl::getCurrentProgram() == 0,
                       "Another shader program is bound already");
 #endif
 
@@ -148,7 +142,7 @@ public:
     inline void unbind() {
         bound = false;
 #ifdef DEBUG_ASSERTIONS
-        DEBUG_ASSERTF(getCurrentProgram() == this->program_id,
+        DEBUG_ASSERTF(gl::getCurrentProgram() == this->program_id,
                       "Trying to unbind shader of another instance");
 
         glUseProgram(0);
@@ -218,6 +212,12 @@ public:
         });
     }
 
+    void bindParam(const char* name, float val) {
+        bindInner(name, [val](GLint id) {
+            glUniform1f(id, val);
+        });
+    }
+
     void bindParam(const char* name, int32_t val) {
         static_assert(sizeof(int32_t) == sizeof(GLint));
         bindInner(name, [val](GLint id) {
@@ -253,7 +253,7 @@ public:
 #ifdef DEBUG_ASSERTIONS
 
     inline static bool isInShaderContext() {
-        return getCurrentProgram() != 0;
+        return gl::getCurrentProgram() != 0;
     }
 
 #endif

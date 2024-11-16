@@ -10,80 +10,123 @@
 #include <glm/gtx/string_cast.hpp>
 #include "../Observer.h"
 #include "../gl_utils.h"
+#include "SSBO.h"
+#include "ShaderCommon.h"
 
-template<typename Inner>
-class SSBO {
-    static_assert(alignof(Inner) == 16);
-    static_assert(sizeof(GLuint) == sizeof(unsigned int));
+/*
+ * Matching declaration for struct Light in fragment/lights.glsl
+ */
+class alignas(16) Light final {
 private:
-    // https://www.khronos.org/opengl/wiki/Interface_Block_(GLSL)#Shader_storage_blocks
-    // https://www.khronos.org/opengl/wiki/Shader_Storage_Buffer_Object
-    GLuint m_ssboId = 0;
-    std::vector<Inner> m_objects;
+    /*
+     * More info about memory layout here:
+     * https://www.khronos.org/opengl/wiki/Interface_Block_(GLSL)#Memory_layout
+     */
+    glm::vec3 position;
+    uint32_t _padding_0 = 0;
+
+    glm::vec3 direction;
+    uint32_t _padding_1 = 0;
+
+    glm::vec3 attenuation;
+    uint32_t _padding_2 = 0;
+
+    glm::vec4 color;
+
+    int type = 1; // 0 - none, 1 - point, 2 - direction, 3 - reflector
+    float cutoff = 0;
 public:
-    SSBO(const SSBO &other) = delete;
+    explicit Light(const glm::vec3 &position, const glm::vec3 &direction,
+                   const glm::vec3 &attenuation,
+                   const glm::vec4 &color) : position(position), direction(direction),
+                                             attenuation(attenuation), color(color) {}
 
-    SSBO(SSBO &&other) noexcept: m_ssboId(other.m_ssboId),
-                                 m_objects(std::move(other.m_objects)) {
-        other.m_ssboId = 0;
+    [[nodiscard]] const glm::vec3 &getPosition() const {
+        return position;
     }
 
-    explicit SSBO() {
-        glGenBuffers(1, &m_ssboId);
-        DEBUG_ASSERT(0 != m_ssboId);
+    void setPosition(const glm::vec3 &position) {
+        Light::position = position;
     }
 
-    // Sends array of objects into the ssbo buffer
-    void send() {
-        DEBUG_ASSERT(0 != m_ssboId);
-        glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_ssboId);
-        gl::assertNoError();
-
-        size_t allocSize = m_objects.size() * sizeof(Inner);
-        glBufferData(GL_SHADER_STORAGE_BUFFER, allocSize, m_objects.data(), GL_DYNAMIC_DRAW);
-        gl::assertNoError();
-
-#ifdef DEBUG_ASSERTIONS
-        // unbind the buffer
-        glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
-        gl::assertNoError();
-#endif
+    [[nodiscard]] const glm::vec3 &getDirection() const {
+        return direction;
     }
 
-    // Binds the buffer to the binding used in GLSL shader
-    void bind(GLuint bindIndex) {
-        DEBUG_ASSERT(0 != m_ssboId);
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, bindIndex, m_ssboId);
-        gl::assertNoError();
+    void setDirection(const glm::vec3 &direction) {
+        Light::direction = direction;
     }
 
-    std::vector<Inner> &objects() {
-        return m_objects;
+    [[nodiscard]] const glm::vec3 &getAttenuation() const {
+        return attenuation;
     }
 
-    ~SSBO() {
-        if (0 != m_ssboId) {
-            glDeleteBuffers(1, &m_ssboId);
-        }
+    void setAttenuation(const glm::vec3 &attenuation) {
+        Light::attenuation = attenuation;
+    }
+
+    [[nodiscard]] const glm::vec4 &getColor() const {
+        return color;
+    }
+
+    void setColor(const glm::vec4 &color) {
+        Light::color = color;
+    }
+};
+// So that I don't accidentally add more fields
+static_assert(sizeof(Light) == 80);
+
+class Material {
+private:
+    friend class ShaderLights;
+
+    glm::vec4 ambient;
+    glm::vec4 diffuse;
+    glm::vec4 specular;
+    float shininess;
+
+public:
+    Material(const glm::vec4 &ambient, const glm::vec4 &diffuse, const glm::vec4 &specular,
+             float shininess) : ambient(ambient), diffuse(diffuse), specular(specular),
+                                shininess(shininess) {}
+
+    const glm::vec4 &getAmbient() const {
+        return ambient;
+    }
+
+    void setAmbient(const glm::vec4 &ambient) {
+        Material::ambient = ambient;
+    }
+
+    const glm::vec4 &getDiffuse() const {
+        return diffuse;
+    }
+
+    void setDiffuse(const glm::vec4 &diffuse) {
+        Material::diffuse = diffuse;
+    }
+
+    const glm::vec4 &getSpecular() const {
+        return specular;
+    }
+
+    void setSpecular(const glm::vec4 &specular) {
+        Material::specular = specular;
+    }
+
+    float getShininess() const {
+        return shininess;
+    }
+
+    void setShininess(float shininess) {
+        Material::shininess = shininess;
     }
 };
 
 class ShaderLights
-        : public Shader,
-          public Observer<ViewMatrix>, public Observer<ProjectionMatrix> {
+        : public ShaderCommon<ShaderLights, "lights.glsl", "lights.glsl"> {
 private:
-    struct alignas(16) Light {
-        glm::vec3 position;
-        float _padding;
-        glm::vec4 color;
-        float intensity;
-        float reflectiveness;
-//        float _padding;
-    };
-
-    ShaderProgram program;
     SSBO<Light> lights;
-    glm::vec4 ambientColor = glm::vec4(0.1, 0.1, 0.1, 1.0);
     int32_t flags = 0; // Lightning features, see fragment/lights.glsl
 
     const int32_t FLAG_AMBIENT = 1 << 0;
@@ -98,61 +141,47 @@ private:
 #endif
     }
 
-    explicit ShaderLights(ShaderProgram program) : program(std::move(program)),
-                                                   lights() {
-        lights.objects().emplace_back(Light{
-                .position = glm::vec3(0, 4, 0),
-                ._padding = 0,
-//                .color = glm::vec4(0.385, 0.647, 0.812, 1.0),
-//                .color = glm::vec4(1, 0, 0, 1.0),
-                .color = glm::vec4(1, 1, 1, 1),
-                .intensity = 0.1,
-                .reflectiveness = 1
-        });
-
-//        lights.objects().emplace_back(Light{
-//                .position = glm::vec3(0, -10, 0),
-//                ._padding = 0,
-////                .color = glm::vec4(0.385, 0.647, 0.812, 1.0),
-//                .color = glm::vec4(0, 1, 0, 1.0),
-//                .intensity = 0.1,
-//        });
-        lights.send();
-    }
-
     void flagsUpdated() {
         this->bind();
         program.bindParam("flags", flags);
         this->unbind();
     }
 
+protected:
+    void onCameraPositionChange(glm::vec3 cameraPosition) override {
+        DEBUG_ASSERT(program.isBound());
+        program.bindParam("cameraPosition", cameraPosition);
+    }
+
 public:
+    using ShaderCommon::ShaderCommon;
+
     ShaderLights(const ShaderLights &other) = delete;
 
     ShaderLights(ShaderLights &&other) noexcept:
-            program(std::move(other.program)),
+            ShaderCommon(std::move(other)),
             lights(std::move(other.lights)) {
     }
 
-    static std::optional<std::shared_ptr<ShaderLights>> load(const ShaderLoaderV2 &loader) {
-        auto maybeVertexShader = loader.loadVertex("lights.glsl");
-        if (!maybeVertexShader.has_value()) {
-            return {};
-        }
-        auto maybeFragmentShader = loader.loadFragment("lights.glsl");
-        if (!maybeFragmentShader.has_value()) {
-            return {};
-        }
+    /*
+     * Adds a light to the shader and sends it to the SSBO
+     * @returns Index where the light is located. You can use it to modify it
+     */
+    size_t addLight(Light light) {
+        size_t idx = lights.objects().size();
+        lights.objects().emplace_back(std::move(light));
+        lights.realloc();
+        return idx;
+    }
 
-        auto maybeShaderProgram = ShaderProgram::link(maybeFragmentShader.value(),
-                                                      maybeVertexShader.value());
-        if (!maybeShaderProgram.has_value()) {
-            return {};
-        }
+    Light &getLight(size_t idx) {
+        DEBUG_ASSERT(idx < lights.objects().size());
+        return lights.objects().at(idx);
+    }
 
-        auto inner = ShaderLights(maybeShaderProgram.value());
-        auto self = std::make_shared<ShaderLights>(std::move(inner));
-        return std::move(self);
+    void updateLight(size_t idx) {
+        DEBUG_ASSERT(idx < lights.objects().size());
+        lights.updateAt(idx);
     }
 
 #define BITFLAG(SET_FUNC_NAME, HAS_FUNC_NAME, FLAG_NAME) \
@@ -179,41 +208,46 @@ public:
 
 #undef BITFLAG
 
-    void setAmbientColor(glm::vec3 color) {
-        this->bind();
-        ambientColor = glm::vec4(color, 1);
-        program.bindParam("ambientColor", ambientColor);
-        this->unbind();
+    void applyConstant() {
+        setAmbientEnabled(true);
+        setDiffuseEnabled(false);
+        setSpecularEnabled(false);
+        setHalfwayEnabled(false);
     }
 
-    void modelMatrix(glm::mat4 mat) {
-        DEBUG_ASSERT(program.isBound());
-        program.bindParam("modelMatrix", mat);
+    void applyLambert() {
+        setAmbientEnabled(true);
+        setDiffuseEnabled(true);
+        setSpecularEnabled(false);
+        setHalfwayEnabled(false);
     }
 
-    void cameraPosition(glm::vec3 cameraPosition) {
-        DEBUG_ASSERT(program.isBound());
-        program.bindParam("cameraPosition", cameraPosition);
+    void applyPhong() {
+        setAmbientEnabled(true);
+        setDiffuseEnabled(true);
+        setSpecularEnabled(true);
+        setHalfwayEnabled(false);
     }
 
-    void update(const ViewMatrix &action) override {
-        this->bind();
-        program.bindParam("viewMatrix", action.viewMatrix);
-        this->unbind();
+    void applyBlinnPhong() {
+        setAmbientEnabled(true);
+        setDiffuseEnabled(true);
+        setSpecularEnabled(true);
+        setHalfwayEnabled(true);
     }
 
-    void update(const ProjectionMatrix &action) override {
-        this->bind();
-        program.bindParam("projectionMatrix", action.projectionMatrix);
-        this->unbind();
+    void setMaterial(const Material &material) {
+        program.bind();
+        program.bindParam("material.ambient", material.ambient);
+        program.bindParam("material.diffuse", material.diffuse);
+        program.bindParam("material.specular", material.specular);
+        program.bindParam("material.shininess", material.shininess);
+        program.unbind();
     }
+
 
     void bind() override {
+        ShaderCommon::bind();
         lights.bind(0);
-        program.bind();
-    }
-
-    void unbind() override {
-        program.unbind();
     }
 };

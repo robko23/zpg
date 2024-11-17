@@ -4,29 +4,28 @@
 
 #pragma once
 
-#include "../GLWindow.h"
-#include "../shaders/Shader.h"
 #include "../Camera.h"
-#include "../Transformation.h"
-#include <memory>
-#include "../assertions.h"
-#include "../shaders/ShaderLights.h"
+#include "../GLWindow.h"
+#include "../Light.h"
 #include "../ShaderLoaderV2.h"
-#include <memory>
-#include "../drawable/Tree.h"
-#include "imgui.h"
-#include "Scene.h"
-#include "../MathHelpers.h"
-#include <random>
-#include <cmath>
+#include "../Transformation.h"
 #include "../drawable/Bush.h"
+#include "../drawable/Tree.h"
+#include "../shaders/ShaderLights.h"
 #include "BasicScene.h"
+#include "imgui.h"
+#include <cmath>
+#include <memory>
+#include <random>
 
 class SceneForest : public BasicScene {
-private:
+  private:
     Tree tree;
     Bush bush;
     std::shared_ptr<ShaderLights> shaderLights;
+
+    PointLight sun;
+    std::shared_ptr<Flashlight> flashlight;
 
     float maxScatterRadius = 10;
 
@@ -70,50 +69,57 @@ private:
 
         for (int i = 0; i < num; ++i) {
             double theta = angle_distribution(generator);
-            double radius = maxScatterRadius * sqrt(radius_distribution(generator));
+            double radius =
+                maxScatterRadius * sqrt(radius_distribution(generator));
             auto x = radius * std::cos(theta);
             auto z = radius * std::sin(theta);
 
             auto modelMatrix = TransformationBuilder()
-                    .rotateY(std::cos(theta))
-                    .moveX(x)
-                    .moveZ(z)
-                    .build();
+                                   .rotateY(std::cos(theta))
+                                   .moveX(x)
+                                   .moveZ(z)
+                                   .build();
             trans.emplace_back(modelMatrix);
         }
         return trans;
     }
 
-public:
-    explicit SceneForest(const std::shared_ptr<GLWindow> &window, const ShaderLoaderV2 &loader)
-            : BasicScene(window) {
+  public:
+    explicit SceneForest(const std::shared_ptr<GLWindow> &window,
+                         const ShaderLoaderV2 &loader)
+        : BasicScene(window), shaderLights(ShaderLights::load(loader).value()),
+          sun(loader, camera, shaderLights),
+          flashlight(Flashlight::construct(loader, camera, shaderLights)) {
         treeTrans = scatterObjects(numberOfTrees);
         bushesTrans = scatterObjects(numberOfBushes);
-        auto shader = ShaderLights::load(loader).value();
-        camera.attach(shader);
-        camera.projection()->attach(shader);
+        camera.attach(shaderLights);
+        camera.projection()->attach(shaderLights);
 
-        shader->applyBlinnPhong();
+        shaderLights->applyBlinnPhong();
 
-//        auto light = Light(glm::vec3(0, 10, 0), glm::vec3(1), glm::vec3(0, 0.008, 0.008),
-//                           glm::vec4(1));
-//        shader->addLight(light);
+        sun.setPosition(glm::vec3(0, 10, 0));
+        sun.setConfigurable(true);
+        sun.setColor(glm::vec3(1));
 
-        auto material = Material(glm::vec4(0.1), glm::vec4(0.419, 0.678, 0.274, 1), glm::vec4(0.047, 1, 0, 1), 64);
-        shader->setMaterial(material);
+		flashlight->setRenderCube(false);
 
-        shaderLights = std::move(shader);
+        auto material =
+            Material(glm::vec4(0.1), glm::vec4(0.419, 0.678, 0.274, 1),
+                     glm::vec4(0.047, 1, 0, 1), 64);
+        shaderLights->setMaterial(material);
     }
 
     void renderScene() override {
+		sun.render();
+		flashlight->render();
         shaderLights->bind();
 
-        for (const auto &item: treeTrans) {
+        for (const auto &item : treeTrans) {
             shaderLights->modelMatrix(item);
             tree.draw();
         }
 
-        for (const auto &item: bushesTrans) {
+        for (const auto &item : bushesTrans) {
             shaderLights->modelMatrix(item);
             bush.draw();
         }
@@ -121,7 +127,5 @@ public:
         shaderLights->unbind();
     }
 
-    const char* getId() override {
-        return "forest";
-    }
+    const char *getId() override { return "forest"; }
 };

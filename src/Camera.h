@@ -4,21 +4,23 @@
 
 #pragma once
 
-#include <deque>
-#include <algorithm>
-#include "glm/vec3.hpp"
-#include "glm/gtc/matrix_transform.hpp"
-#include <memory>
-#include "Projection.h"
 #include "Observer.h"
+#include "Projection.h"
+#include "glm/ext/matrix_transform.hpp"
+#include <memory>
 
 struct CameraProperties {
     glm::mat4 viewMatrix;
     glm::vec3 cameraPosition;
+
+    [[nodiscard]] static inline CameraProperties defaultProps() {
+        return CameraProperties{.viewMatrix = glm::mat4(1),
+                                .cameraPosition = glm::vec3(1)};
+    }
 };
 
 class Camera : public Observable<CameraProperties> {
-private:
+  private:
     glm::vec3 m_eye;
     glm::vec3 m_target;
     glm::vec3 m_up;
@@ -35,7 +37,8 @@ private:
 
     void handleChange() {
         recalculate();
-        notify(CameraProperties{.viewMatrix = viewMatrix, .cameraPosition = m_eye});
+        notify(CameraProperties{.viewMatrix = viewMatrix,
+                                .cameraPosition = m_eye});
     }
 
     void recalculate() {
@@ -60,20 +63,19 @@ private:
         viewMatrix = glm::lookAt(m_eye, m_eye + m_target, m_up);
     }
 
-public:
+  public:
     explicit Camera(double sensitivity, const std::shared_ptr<GLWindow> &window,
                     glm::vec3 initialPosition = glm::vec3(-3, 3, -3))
-            : Observable<CameraProperties>(
-            CameraProperties{.viewMatrix = glm::mat4(1), .cameraPosition = initialPosition}),
-              m_eye(initialPosition),
-              m_target(0), m_up(0, 1, 0), sensitivity(sensitivity),
-              window(window) {
+        : Observable<CameraProperties>(CameraProperties{
+              .viewMatrix = glm::mat4(1), .cameraPosition = initialPosition}),
+          m_eye(initialPosition), m_target(0), m_up(0, 1, 0),
+          sensitivity(sensitivity), window(window) {
         perspectiveProjection = std::make_shared<PerspectiveProjection>();
         window->attach(perspectiveProjection);
         handleChange();
     }
 
-    [[nodiscard]] PerspectiveProjection* projection() {
+    [[nodiscard]] PerspectiveProjection *projection() {
         auto ptr = perspectiveProjection.get();
         DEBUG_ASSERT_NOT_NULL(ptr)
         return ptr;
@@ -90,27 +92,23 @@ public:
     }
 
     void moveLeft(float speed) {
-        m_eye -= (glm::normalize(glm::cross(m_target, m_up))) * speed;
+        m_eye -= (glm::normalize(glm::cross(m_target, m_up)))*speed;
         handleChange();
     }
 
     void moveRight(float speed) {
-        m_eye += (glm::normalize(glm::cross(m_target, m_up))) * speed;
+        m_eye += (glm::normalize(glm::cross(m_target, m_up)))*speed;
         handleChange();
     }
 
-    void setSensitivity(double val) {
-        sensitivity = val;
-    }
+    void setSensitivity(double val) { sensitivity = val; }
 
     void setPosition(glm::vec3 position) {
         m_eye = position;
         handleChange();
     }
 
-    glm::vec3 getPosition() {
-        return m_eye;
-    }
+    glm::vec3 getPosition() { return m_eye; }
 
     void setYaw(float val) {
         yaw = val;
@@ -138,8 +136,5 @@ public:
         }
     }
 
-    ~Camera() override {
-        window->detach(perspectiveProjection);
-    };
+    ~Camera() override { window->detach(perspectiveProjection); };
 };
-

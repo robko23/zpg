@@ -4,7 +4,15 @@
 
 #pragma once
 
+#include "GL/glew.h"
+#include "GL/gl.h"
 #include "../MathHelpers.h"
+#include "GLFW/glfw3.h"
+#include "Scene.h"
+#include "imgui.h"
+#include <memory>
+#include "../GLWindow.h"
+#include "../Camera.h"
 
 class BasicScene : public Scene {
 private:

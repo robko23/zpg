@@ -10,9 +10,7 @@
 #include "gl_info.h"
 #include <iostream>
 #include <memory>
-#include <list>
 #include <functional>
-#include <algorithm>
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"

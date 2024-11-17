@@ -7,12 +7,6 @@
 #include "../ShaderLoaderV2.h"
 #include "../shaders/ShaderLights.h"
 #include <memory>
-#include <random>
-#include "../drawable/Cube.h"
-#include "../shaders/ShaderLightCube.h"
-#include <sstream>
-#include <string>
-#include <iostream>
 #include "../Light.h"
 
 // attenuation: 0, 0.008, 0.008
@@ -23,7 +17,7 @@ private:
     Tree tree;
     std::shared_ptr<ShaderLights> shaderLightning;
     TransformationBuilder treeTransformations;
-    Light pointLight;
+    PointLight pointLight;
 //    TransformationBuilder transformationBuilder1;
     float rotation_speed = 1;
     float lightMovementSpeed = 6;
@@ -113,7 +107,7 @@ public:
                              const ShaderLoaderV2 &loader)
             : BasicScene(window),
               shaderLightning(ShaderLights::load(loader).value()),
-              pointLight(Light(loader, camera, shaderLightning)) {
+              pointLight(PointLight(loader, camera, shaderLightning)) {
         camera.attach(shaderLightning);
         camera.projection()->attach(shaderLightning);
 

@@ -4,9 +4,8 @@
 
 #pragma once
 
-#include <vector>
-#include <algorithm>
 #include "assertions.h"
+#include <memory>
 
 template<typename Action>
 class Observer {

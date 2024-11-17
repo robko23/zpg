@@ -4,9 +4,11 @@
 
 #pragma once
 
+#include "assertions.h"
 #include <glm/mat4x4.hpp> // glm::mat4
 #include <glm/gtc/matrix_transform.hpp> // glm::translate, glm::rotate, glm::scale, glm::perspective
 #include <deque>
+#include <memory>
 
 class Transformation {
 public:

@@ -3,6 +3,7 @@
 //
 
 #pragma once
+
 #include "Shader.h"
 #include "../Projection.h"
 #include "../Camera.h"
@@ -46,7 +47,8 @@ template<
         StringLiteral ViewMatrixUniformName = "viewMatrix",
         StringLiteral ProjectionMatrixUniformName = "projectionMatrix"
 >
-class ShaderCommon : public Observer<CameraProperties>, public Observer<ProjectionMatrix>, public Shader {
+class ShaderCommon
+        : public Observer<CameraProperties>, public Observer<ProjectionMatrix>, public Shader {
 protected:
     ShaderProgram program;
 
@@ -101,5 +103,9 @@ public:
 
     void unbind() override {
         program.unbind();
+    }
+
+    bool isBound() override {
+        return program.isBound();
     }
 };

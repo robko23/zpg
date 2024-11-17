@@ -250,6 +250,8 @@ public:
 
     virtual void unbind() = 0;
 
+    virtual bool isBound() = 0;
+
 #ifdef DEBUG_ASSERTIONS
 
     inline static bool isInShaderContext() {

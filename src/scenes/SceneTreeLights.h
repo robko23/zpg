@@ -16,6 +16,7 @@ class SceneTreeLights : public BasicScene {
 private:
     Tree tree;
     std::shared_ptr<ShaderLights> shaderLightning;
+    std::shared_ptr<ShaderLightCube> shaderLightCube;
     TransformationBuilder treeTransformations;
     PointLight pointLight;
 //    TransformationBuilder transformationBuilder1;
@@ -107,7 +108,8 @@ public:
                              const ShaderLoaderV2 &loader)
             : BasicScene(window),
               shaderLightning(ShaderLights::load(loader).value()),
-              pointLight(PointLight(loader, camera, shaderLightning)) {
+              shaderLightCube(ShaderLightCube::load(loader).value()),
+              pointLight(PointLight(loader, camera, shaderLightning, shaderLightCube)) {
         camera.attach(shaderLightning);
         camera.projection()->attach(shaderLightning);
 
@@ -124,7 +126,9 @@ public:
         if (autoMoveXEnabled) {
             applyLightMovement();
         }
+        shaderLightCube->bind();
         pointLight.render();
+        shaderLightCube->unbind();
 
         shaderLightning->bind();
         applyRotation();

@@ -23,10 +23,13 @@ class SceneForest : public BasicScene {
     Tree tree;
     Bush bush;
     std::shared_ptr<ShaderLights> shaderLights;
+    std::shared_ptr<ShaderLightCube> shaderLightCube;
 
     PointLight sun;
     std::shared_ptr<Flashlight> flashlight;
+    std::vector<Firefly> fireflies;
 
+    const size_t NUM_FIREFLIES = 10;
     float maxScatterRadius = 50;
 
     int numberOfTrees = 50;
@@ -88,8 +91,9 @@ class SceneForest : public BasicScene {
     explicit SceneForest(const std::shared_ptr<GLWindow> &window,
                          const ShaderLoaderV2 &loader)
         : BasicScene(window), shaderLights(ShaderLights::load(loader).value()),
-          sun(loader, camera, shaderLights),
-          flashlight(Flashlight::construct(loader, camera, shaderLights)) {
+        shaderLightCube(ShaderLightCube::load(loader).value()),
+          sun(loader, camera, shaderLights, shaderLightCube),
+          flashlight(Flashlight::construct(loader, camera, shaderLights, shaderLightCube)) {
         treeTrans = scatterObjects(numberOfTrees);
         bushesTrans = scatterObjects(numberOfBushes);
         camera.attach(shaderLights);
@@ -107,11 +111,23 @@ class SceneForest : public BasicScene {
             Material(glm::vec4(0.1), glm::vec4(0.419, 0.678, 0.274, 1),
                      glm::vec4(0.047, 1, 0, 1), 64);
         shaderLights->setMaterial(material);
+
+        fireflies.reserve(NUM_FIREFLIES);
+        for (int i = 0; i < NUM_FIREFLIES; i++) {
+            Firefly firefly(loader, camera, shaderLights, window, shaderLightCube);
+			firefly.setPosition(glm::vec3(i, 5, i));
+            fireflies.emplace_back(std::move(firefly));
+        }
     }
 
     void renderScene() override {
+        shaderLightCube->bind();
         sun.render();
         flashlight->render();
+        for (Firefly &firefly : fireflies) {
+            firefly.render();
+        }
+        shaderLightCube->unbind();
         shaderLights->bind();
 
         for (const auto &item : treeTrans) {

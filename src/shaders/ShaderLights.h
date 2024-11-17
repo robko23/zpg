@@ -5,7 +5,6 @@
 #include "SSBO.h"
 #include "ShaderCommon.h"
 #include <glm/gtx/string_cast.hpp>
-#include <iostream>
 
 enum LightType { None = 0, Point = 1, Directional = 2, Reflector = 3 };
 
@@ -63,6 +62,10 @@ class alignas(16) LightGLSL final {
     [[nodiscard]] const glm::vec3 &getAttenuation() const {
         return attenuation;
     }
+
+	[[nodiscard]] const LightType getType() const {
+		return static_cast<LightType>(type);
+	}
 };
 // So that I don't accidentally add more fields
 static_assert(sizeof(LightGLSL) == 80);

@@ -3,28 +3,43 @@
 //
 
 #pragma once
+
 #include "Camera.h"
+#include "GLWindow.h"
 #include "Observer.h"
 #include "Transformation.h"
+#include "assertions.h"
 #include "drawable/Cube.h"
 #include "imgui.h"
 #include "shaders/ShaderLightCube.h"
 #include "shaders/ShaderLights.h"
 #include <glm/glm.hpp>
 #include <memory>
+#include <random>
 #include <stdint.h>
 
 class Light {
-  private:
+protected:
+    glm::vec3 position = glm::vec3(0, 10, 0);
+    TransformationBuilder transformations;
+    float attenuationX = 0;
+    float attenuationY = 0.1;
+    float attenuationZ = 0.02;
+    glm::vec3 lightColor = glm::vec3(1);
+    glm::vec3 direction = glm::vec3(1);
+    float cutoff = 0.8;
+
+private:
     Cube cube;
     std::shared_ptr<ShaderLightCube> shaderLightCube;
-    TransformationBuilder transformations;
     std::shared_ptr<ShaderLights> shaderLightning;
     size_t lightIndex;
 
     std::optional<std::string> menuTitle = {};
     bool configurable = true;
     bool renderCube = true;
+    bool enabled = true;
+    LightType prevType = LightType::None;
 
     void renderLightSettings() {
         if (!menuTitle.has_value()) {
@@ -33,8 +48,11 @@ class Light {
             menuTitle = stream.str();
         }
 
-        const char *title = menuTitle.value().c_str();
+        const char* title = menuTitle.value().c_str();
         ImGui::Begin(title);
+        if (ImGui::Checkbox("Enabled", &enabled)) {
+            setEnabled(enabled);
+        }
         if (ImGui::ColorPicker3("Light color", &lightColor.x)) {
             update();
         }
@@ -51,54 +69,42 @@ class Light {
         ImGui::End();
     }
 
-  protected:
-    glm::vec3 position = glm::vec3(0, 10, 0);
-    float attenuationX = 0;
-    float attenuationY = 0.1;
-    float attenuationZ = 0.02;
-    glm::vec3 lightColor = glm::vec3(1);
-    glm::vec3 direction = glm::vec3(1);
-    float cutoff = 0.8;
-
-    virtual void renderMoreSettings() {}
-
     LightGLSL &getLight() const {
         return shaderLightning->getLight(lightIndex);
     }
+
+protected:
+    virtual void renderMoreSettings() {}
 
     void update() {
         LightGLSL &light = shaderLightning->getLight(lightIndex);
         light.setPosition(position);
         light.setAttenuation(
-            glm::vec3(attenuationX, attenuationY, attenuationZ));
+                glm::vec3(attenuationX, attenuationY, attenuationZ));
         light.setColor(glm::vec4(lightColor, 1));
         light.setDirection(direction);
-		light.setCutoff(cutoff);
+        light.setCutoff(cutoff);
         shaderLightCube->setLightColor(light.getColor());
         shaderLightning->updateLight(lightIndex);
-        TransformationTranslate *translate =
-            dynamic_cast<TransformationTranslate *>(transformations.at(0));
+        TransformationTranslate* translate =
+                dynamic_cast<TransformationTranslate*>(transformations.at(0));
         DEBUG_ASSERT_NOT_NULL(translate);
         translate->setPosition(position);
-
-        shaderLightCube->bind();
-        shaderLightCube->modelMatrix(transformations.build());
-        shaderLightCube->unbind();
     }
 
-  public:
+public:
     explicit Light(const ShaderLoaderV2 &loader, Camera &camera,
-                   const std::shared_ptr<ShaderLights> &shaderLights)
-        : shaderLightning(shaderLights) {
-        shaderLightCube = ShaderLightCube::load(loader).value();
+                   const std::shared_ptr<ShaderLights> &shaderLights,
+                   const std::shared_ptr<ShaderLightCube> &shaderLightCube
+    )
+            : transformations(TransformationBuilder().translate(position).scale(0.2)),
+              shaderLightCube(shaderLightCube),
+              shaderLightning(shaderLights) {
         camera.attach(shaderLightCube);
         camera.projection()->attach(shaderLightCube);
 
-        lightIndex = shaderLightning->addLight(
-            LightGLSL(position, glm::vec3(0), glm::vec3(0), glm::vec4(1)));
-
-        transformations =
-            TransformationBuilder().translate(position).scale(0.2);
+        lightIndex = shaderLights->addLight(
+                LightGLSL(position, glm::vec3(0), glm::vec3(0), glm::vec4(1)));
         update();
     }
 
@@ -126,47 +132,73 @@ class Light {
         update();
     }
 
+    void setEnabled(bool val) {
+        LightGLSL &light = getLight();
+        if (val) {
+            light.setType(prevType);
+            enabled = true;
+        } else {
+            prevType = light.getType();
+            light.setType(LightType::None);
+            enabled = false;
+        }
+        update();
+    }
+
+    void setType(LightType type) {
+        getLight().setType(type);
+        prevType = type;
+    }
+
     [[nodiscard]] glm::vec3 getColor() const { return lightColor; }
+
     [[nodiscard]] glm::vec3 getPosition() const { return position; }
 
-    void render() {
+    [[nodiscard]] bool isEnabled() const { return enabled; }
+
+    virtual void render() {
         if (configurable) {
             renderLightSettings();
         }
 
         if (renderCube) {
-            shaderLightCube->bind();
+            DEBUG_ASSERT(shaderLightCube->isBound())
+            shaderLightCube->modelMatrix(transformations.build());
+            shaderLightCube->setLightColor(getLight().getColor());
             cube.draw();
-            shaderLightCube->unbind();
         }
     }
 
-    [[nodiscard]] virtual const char *getId() const = 0;
+    [[nodiscard]] virtual const char* getId() const = 0;
 };
 
 class PointLight : public Light {
     using Light::Light;
-    const char *getId() const override { return "point-light"; }
+
+    const char* getId() const override { return "point-light"; }
 };
 
 class Flashlight : public Light, public Observer<CameraProperties> {
-  private:
+private:
     explicit Flashlight(const ShaderLoaderV2 &loader, Camera &camera,
-                        const std::shared_ptr<ShaderLights> &shaderLights)
-        : Light(loader, camera, shaderLights) {
-        getLight().setType(LightType::Reflector);
-		attenuationX = 0.1;
-		attenuationY = 0.01;
-		attenuationZ = 0.005;
-		cutoff = 0.9;
+                        const std::shared_ptr<ShaderLights> &shaderLights,
+                        const std::shared_ptr<ShaderLightCube> &shaderLightCube
+    )
+            : Light(loader, camera, shaderLights, shaderLightCube) {
+        setType(LightType::Reflector);
+        attenuationX = 0.1;
+        attenuationY = 0.01;
+        attenuationZ = 0.005;
+        cutoff = 0.9;
     }
 
-  public:
+public:
     static std::shared_ptr<Flashlight>
     construct(const ShaderLoaderV2 &loader, Camera &camera,
-              const std::shared_ptr<ShaderLights> &shaderLights) {
+              const std::shared_ptr<ShaderLights> &shaderLights,
+              const std::shared_ptr<ShaderLightCube> &shaderLightCube) {
         auto self = std::shared_ptr<Flashlight>(
-            new Flashlight(loader, camera, shaderLights));
+                new Flashlight(loader, camera, shaderLights, shaderLightCube));
         camera.attach(self);
         return self;
     }
@@ -178,9 +210,96 @@ class Flashlight : public Light, public Observer<CameraProperties> {
 
     void renderMoreSettings() override {
         if (ImGui::SliderFloat("Cutoff", &cutoff, 0.7, 1.05)) {
-			Light::update();
+            Light::update();
         }
     }
 
-    const char *getId() const override { return "flashlight"; }
+    const char* getId() const override { return "flashlight"; }
+};
+
+class Firefly : public Light {
+private:
+    std::shared_ptr<GLWindow> window;
+    glm::vec3 direction = glm::vec3(1);
+    std::mt19937 generator;
+    std::uniform_real_distribution<> distribution =
+            std::uniform_real_distribution<>(-1, 1);
+
+    glm::vec3 targetDirection = glm::vec3(1.0f);
+    float directionChangeInterval = 1.0f; // Seconds between direction changes
+    float timeSinceLastChange = 0.0f;
+    float maxY = 4;
+    float minY = 1;
+
+    void applyWanderingMovement() {
+        glm::vec3 position = getPosition();
+        // Update direction every directionChangeInterval seconds
+        timeSinceLastChange += window->getDelta();
+        if (timeSinceLastChange >= directionChangeInterval) {
+            // Generate a new random target direction
+            targetDirection = glm::normalize(
+                    glm::vec3(distribution(generator), distribution(generator),
+                              distribution(generator)));
+
+            // Check Y boundaries and adjust target direction
+            float currentY = position.y;
+            if (currentY >= maxY) {
+                // Prefer to move down if near the ceiling
+                targetDirection.y = glm::min(targetDirection.y, -0.5f);
+            } else if (currentY <= minY) {
+                // Prefer to move up if near the floor
+                targetDirection.y = glm::max(targetDirection.y, 0.5f);
+            }
+
+            timeSinceLastChange = 0.0f;
+        }
+
+        // Smoothly move towards the target direction
+        float interpolationSpeed = 0.05f; // Smaller values are smoother
+        direction = glm::normalize(
+                glm::mix(direction, targetDirection, interpolationSpeed));
+
+        // Apply movement with current direction
+        auto moveBy = static_cast<float>(window->getDelta()) * direction;
+
+        // Check and clamp Y value after movement
+        glm::vec3 newPosition = position + moveBy;
+        newPosition.y = glm::clamp(newPosition.y, minY, maxY);
+        setPosition(newPosition);
+    }
+
+public:
+    explicit Firefly(const ShaderLoaderV2 &loader, Camera &camera,
+                     const std::shared_ptr<ShaderLights> &shaderLights,
+                     const std::shared_ptr<GLWindow> &window,
+                     const std::shared_ptr<ShaderLightCube> &shaderLightCube
+    )
+            : Light(loader, camera, shaderLights, shaderLightCube), window(std::move(window)) {
+        std::random_device randomDevice;
+        std::mt19937 seedGenerator(randomDevice());
+        std::uniform_real_distribution<> seed_distribution(0, 9348012495843);
+        double seed = seed_distribution(seedGenerator);
+        generator.seed(static_cast<float>(seed));
+
+        TransformationScale* scale =
+                dynamic_cast<TransformationScale*>(transformations.at(1));
+        DEBUG_ASSERT_NOT_NULL(scale);
+        scale->setScale(0.05);
+        setConfigurable(false);
+        setRenderCube(true);
+        float randomX = distribution(generator) * 10;
+        float randomZ = distribution(generator) * 10;
+        setPosition(glm::vec3(randomX, 2, randomZ));
+        attenuationZ = 0.2;
+        attenuationY = 0.4;
+        attenuationX = 0.7;
+        setColor(glm::vec3(1, 1, 0.3));
+    }
+
+    void render() override {
+        applyWanderingMovement();
+        Light::render();
+    }
+
+    [[nodiscard]] const char* getId() const override { return "firefly"; }
 };

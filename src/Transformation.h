@@ -47,6 +47,10 @@ public:
     glm::mat4 apply(glm::mat4 source) override {
         return glm::scale(source, scale);
     }
+
+	void setScale(float val) {
+		scale = glm::vec3(val);
+	}
 };
 
 class TransformationTranslate : public Transformation {

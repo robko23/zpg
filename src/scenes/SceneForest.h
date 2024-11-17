@@ -27,7 +27,7 @@ class SceneForest : public BasicScene {
     PointLight sun;
     std::shared_ptr<Flashlight> flashlight;
 
-    float maxScatterRadius = 10;
+    float maxScatterRadius = 50;
 
     int numberOfTrees = 50;
     std::vector<glm::mat4> treeTrans;
@@ -101,7 +101,7 @@ class SceneForest : public BasicScene {
         sun.setConfigurable(true);
         sun.setColor(glm::vec3(1));
 
-		flashlight->setRenderCube(false);
+        flashlight->setRenderCube(false);
 
         auto material =
             Material(glm::vec4(0.1), glm::vec4(0.419, 0.678, 0.274, 1),
@@ -110,8 +110,8 @@ class SceneForest : public BasicScene {
     }
 
     void renderScene() override {
-		sun.render();
-		flashlight->render();
+        sun.render();
+        flashlight->render();
         shaderLights->bind();
 
         for (const auto &item : treeTrans) {

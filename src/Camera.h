@@ -12,10 +12,12 @@
 struct CameraProperties {
     glm::mat4 viewMatrix;
     glm::vec3 cameraPosition;
+    glm::vec3 target;
 
     [[nodiscard]] static inline CameraProperties defaultProps() {
         return CameraProperties{.viewMatrix = glm::mat4(1),
-                                .cameraPosition = glm::vec3(1)};
+                                .cameraPosition = glm::vec3(1),
+                                .target = glm::vec3(0)};
     }
 };
 
@@ -38,7 +40,8 @@ class Camera : public Observable<CameraProperties> {
     void handleChange() {
         recalculate();
         notify(CameraProperties{.viewMatrix = viewMatrix,
-                                .cameraPosition = m_eye});
+                                .cameraPosition = m_eye,
+                                .target = m_target});
     }
 
     void recalculate() {
@@ -66,8 +69,10 @@ class Camera : public Observable<CameraProperties> {
   public:
     explicit Camera(double sensitivity, const std::shared_ptr<GLWindow> &window,
                     glm::vec3 initialPosition = glm::vec3(-3, 3, -3))
-        : Observable<CameraProperties>(CameraProperties{
-              .viewMatrix = glm::mat4(1), .cameraPosition = initialPosition}),
+        : Observable<CameraProperties>(
+              CameraProperties{.viewMatrix = glm::mat4(1),
+                               .cameraPosition = initialPosition,
+                               .target = glm::vec3(0)}),
           m_eye(initialPosition), m_target(0), m_up(0, 1, 0),
           sensitivity(sensitivity), window(window) {
         perspectiveProjection = std::make_shared<PerspectiveProjection>();

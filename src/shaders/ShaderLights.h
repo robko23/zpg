@@ -2,15 +2,18 @@
 
 #include "Shader.h"
 #define GLM_ENABLE_EXPERIMENTAL
-#include <glm/gtx/string_cast.hpp>
 #include "SSBO.h"
 #include "ShaderCommon.h"
+#include <glm/gtx/string_cast.hpp>
+#include <iostream>
+
+enum LightType { None = 0, Point = 1, Directional = 2, Reflector = 3 };
 
 /*
  * Matching declaration for struct Light in fragment/lights.glsl
  */
 class alignas(16) LightGLSL final {
-private:
+  private:
     /*
      * More info about memory layout here:
      * https://www.khronos.org/opengl/wiki/Interface_Block_(GLSL)#Memory_layout
@@ -28,49 +31,44 @@ private:
 
     int type = 1; // 0 - none, 1 - point, 2 - direction, 3 - reflector
     float cutoff = 0;
-public:
-    explicit LightGLSL(const glm::vec3 &position, const glm::vec3 &direction,
-                       const glm::vec3 &attenuation,
-                       const glm::vec4 &color) : position(position), direction(direction),
-                                             attenuation(attenuation), color(color) {}
 
-    [[nodiscard]] const glm::vec3 &getPosition() const {
-        return position;
-    }
+  public:
+    explicit LightGLSL(const glm::vec3 &position, const glm::vec3 &direction,
+                       const glm::vec3 &attenuation, const glm::vec4 &color)
+        : position(position), direction(direction), attenuation(attenuation),
+          color(color) {}
+
+    [[nodiscard]] const glm::vec3 &getPosition() const { return position; }
 
     void setPosition(const glm::vec3 &position) {
         LightGLSL::position = position;
-    }
-
-    [[nodiscard]] const glm::vec3 &getDirection() const {
-        return direction;
     }
 
     void setDirection(const glm::vec3 &direction) {
         LightGLSL::direction = direction;
     }
 
-    [[nodiscard]] const glm::vec3 &getAttenuation() const {
-        return attenuation;
-    }
-
     void setAttenuation(const glm::vec3 &attenuation) {
         LightGLSL::attenuation = attenuation;
     }
 
-    [[nodiscard]] const glm::vec4 &getColor() const {
-        return color;
-    }
+    void setColor(const glm::vec4 &color) { LightGLSL::color = color; }
 
-    void setColor(const glm::vec4 &color) {
-        LightGLSL::color = color;
+    void setType(LightType val) { type = val; }
+
+    void setCutoff(float val) { cutoff = val; }
+
+    [[nodiscard]] const glm::vec4 &getColor() const { return color; }
+    [[nodiscard]] const glm::vec3 &getDirection() const { return direction; }
+    [[nodiscard]] const glm::vec3 &getAttenuation() const {
+        return attenuation;
     }
 };
 // So that I don't accidentally add more fields
 static_assert(sizeof(LightGLSL) == 80);
 
 class Material {
-private:
+  private:
     friend class ShaderLights;
 
     glm::vec4 ambient;
@@ -78,47 +76,34 @@ private:
     glm::vec4 specular;
     float shininess;
 
-public:
-    Material(const glm::vec4 &ambient, const glm::vec4 &diffuse, const glm::vec4 &specular,
-             float shininess) : ambient(ambient), diffuse(diffuse), specular(specular),
-                                shininess(shininess) {}
+  public:
+    Material(const glm::vec4 &ambient, const glm::vec4 &diffuse,
+             const glm::vec4 &specular, float shininess)
+        : ambient(ambient), diffuse(diffuse), specular(specular),
+          shininess(shininess) {}
 
-    const glm::vec4 &getAmbient() const {
-        return ambient;
-    }
+    const glm::vec4 &getAmbient() const { return ambient; }
 
-    void setAmbient(const glm::vec4 &ambient) {
-        Material::ambient = ambient;
-    }
+    void setAmbient(const glm::vec4 &ambient) { Material::ambient = ambient; }
 
-    const glm::vec4 &getDiffuse() const {
-        return diffuse;
-    }
+    const glm::vec4 &getDiffuse() const { return diffuse; }
 
-    void setDiffuse(const glm::vec4 &diffuse) {
-        Material::diffuse = diffuse;
-    }
+    void setDiffuse(const glm::vec4 &diffuse) { Material::diffuse = diffuse; }
 
-    const glm::vec4 &getSpecular() const {
-        return specular;
-    }
+    const glm::vec4 &getSpecular() const { return specular; }
 
     void setSpecular(const glm::vec4 &specular) {
         Material::specular = specular;
     }
 
-    float getShininess() const {
-        return shininess;
-    }
+    float getShininess() const { return shininess; }
 
-    void setShininess(float shininess) {
-        Material::shininess = shininess;
-    }
+    void setShininess(float shininess) { Material::shininess = shininess; }
 };
 
 class ShaderLights
-        : public ShaderCommon<ShaderLights, "lights.glsl", "lights.glsl"> {
-private:
+    : public ShaderCommon<ShaderLights, "lights.glsl", "lights.glsl"> {
+  private:
     SSBO<LightGLSL> lights;
     int32_t flags = 0; // Lightning features, see fragment/lights.glsl
 
@@ -140,21 +125,19 @@ private:
         this->unbind();
     }
 
-protected:
+  protected:
     void onCameraPositionChange(glm::vec3 cameraPosition) override {
         DEBUG_ASSERT(program.isBound());
         program.bindParam("cameraPosition", cameraPosition);
     }
 
-public:
+  public:
     using ShaderCommon::ShaderCommon;
 
     ShaderLights(const ShaderLights &other) = delete;
 
-    ShaderLights(ShaderLights &&other) noexcept:
-            ShaderCommon(std::move(other)),
-            lights(std::move(other.lights)) {
-    }
+    ShaderLights(ShaderLights &&other) noexcept
+        : ShaderCommon(std::move(other)), lights(std::move(other.lights)) {}
 
     /*
      * Adds a light to the shader and sends it to the SSBO
@@ -177,19 +160,16 @@ public:
         lights.updateAt(idx);
     }
 
-#define BITFLAG(SET_FUNC_NAME, HAS_FUNC_NAME, FLAG_NAME) \
-    void SET_FUNC_NAME(bool enabled) { \
-        if (enabled) { \
-            flags |= (FLAG_NAME); \
-        } else { \
-            flags &= ~(FLAG_NAME); \
-        }                                                \
-        flagsUpdated();                                                \
-    } \
-    [[nodiscard]] inline bool HAS_FUNC_NAME() { \
-        return FLAG_NAME; \
-    } \
-
+#define BITFLAG(SET_FUNC_NAME, HAS_FUNC_NAME, FLAG_NAME)                       \
+    void SET_FUNC_NAME(bool enabled) {                                         \
+        if (enabled) {                                                         \
+            flags |= (FLAG_NAME);                                              \
+        } else {                                                               \
+            flags &= ~(FLAG_NAME);                                             \
+        }                                                                      \
+        flagsUpdated();                                                        \
+    }                                                                          \
+    [[nodiscard]] inline bool HAS_FUNC_NAME() { return FLAG_NAME; }
 
     BITFLAG(setAmbientEnabled, hasAmbient, FLAG_AMBIENT);
 
@@ -237,7 +217,6 @@ public:
         program.bindParam("material.shininess", material.shininess);
         program.unbind();
     }
-
 
     void bind() override {
         ShaderCommon::bind();

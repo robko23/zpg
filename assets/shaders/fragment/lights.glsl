@@ -38,7 +38,7 @@ uniform vec3 cameraPosition;
 
 uniform Material material;
 
-layout (std430, binding = 0) buffer Lights {
+layout(std430, binding = 0) buffer Lights {
     Light lights[];
 };
 
@@ -57,10 +57,35 @@ void main() {
     }
 
     for (int i = 0; i < lights.length(); i++) {
-        vec3 lightVector = lights[i].position - local_pos;
-        vec3 lightDir = normalize(lightVector);
+        vec3 lightVector = vec3(1);
+        float distance = 0;
         vec3 viewDir = normalize(cameraPosition - local_pos);
-        float distance = length(lightVector);
+		float intensity = 1;
+
+        if (lights[i].type == 1) { // Point light
+            lightVector = lights[i].position - local_pos;
+            distance = length(lightVector);
+            lightVector = normalize(lightVector);
+        } else if (lights[i].type == 2) { // Directional light
+            lightVector = normalize(-lights[i].direction);
+        } else if (lights[i].type == 3) { // Spotlight / reflector
+            lightVector = lights[i].position - local_pos;
+			distance = length(lightVector);
+            lightVector = normalize(lightVector);
+
+			float theta = dot(lightVector, normalize(-lights[i].direction));
+			float epsilon = 0.07; // Controls the softness of the spotlight edge
+			float innerCutoff = lights[i].cutoff; // Cosine of inner cutoff angle
+			float outerCutoff = innerCutoff - epsilon; // Cosine of outer cutoff angle
+			intensity = smoothstep(outerCutoff, innerCutoff, theta);
+
+			if (intensity <= 0.0) continue; // Skip light if completely out of range
+
+            // float theta = dot(lightVector, normalize(-lights[i].direction));
+            // if (theta < lights[i].cutoff) continue; // Skip light if outside cutoff
+        } else {
+            continue; // unsupported light
+        }
 
         float attenuation = 1.0;
         if (lights[i].type == 1 || lights[i].type == 3) {
@@ -72,27 +97,28 @@ void main() {
 
         if (has_diffuse) {
             // Lambert
-            float diffuse_factor = max(dot(lightDir, out_world_normal), 0.0);
+            float diffuse_factor = max(dot(lightVector, out_world_normal), 0.0);
             vec4 diffuse_color = diffuse_factor * lights[i].color * material.diffuse;
-            frag_colour += diffuse_color * attenuation;
+            frag_colour += diffuse_color * attenuation * intensity;
         }
 
         if (has_specular) {
-            if (dot(out_world_normal, lightDir) >= 0.0) {
+            if (dot(out_world_normal, lightVector) >= 0.0) {
                 float specular_factor = 0.0;
                 if (has_halfway) {
                     // Blinn phong
-                    vec3 halfVector = normalize(lightDir + viewDir);
+                    vec3 halfVector = normalize(lightVector + viewDir);
                     specular_factor = pow(max(dot(out_world_normal, halfVector), 0.0), material.shininess);
                 } else {
                     // Phong
-                    vec3 reflect_dir = reflect(-lightDir, out_world_normal);
+                    vec3 reflect_dir = reflect(-lightVector, out_world_normal);
                     specular_factor = pow(max(dot(viewDir, reflect_dir), 0.0), material.shininess);
                 }
 
                 vec4 specular_color = specular_factor * lights[i].color * material.specular * attenuation;
-                frag_colour += specular_color;
+                frag_colour += specular_color * intensity;
             }
         }
     }
 }
+

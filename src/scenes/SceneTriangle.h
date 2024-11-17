@@ -18,6 +18,8 @@ public:
     explicit SceneTriangle(const std::shared_ptr<GLWindow> &window, const ShaderLoaderV2 &loader)
             : window(window) {
         shader = ShaderBasic::load(loader).value();
+        shader->update(CameraProperties::defaultProps());
+        shader->update(ProjectionMatrix::_default());
     }
 
     void render() override {

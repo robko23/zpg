@@ -12,9 +12,6 @@
 struct ProjectionMatrix {
     glm::mat4 projectionMatrix;
 
-private:
-    friend class PerspectiveProjection;
-
     inline static ProjectionMatrix _default() {
         return ProjectionMatrix{
                 .projectionMatrix = glm::mat4(1)

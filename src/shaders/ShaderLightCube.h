@@ -4,9 +4,7 @@
 
 #pragma once
 
-#include "Shader.h"
 #include "ShaderCommon.h"
-
 
 class ShaderLightCube
         : public ShaderCommon<ShaderLightCube, "lightCube.glsl", "lightCube.glsl"> {

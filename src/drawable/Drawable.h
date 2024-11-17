@@ -4,7 +4,6 @@
 
 #ifndef ZPG_DRAWABLE_H
 #define ZPG_DRAWABLE_H
-//#include "../Shader.h"
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 

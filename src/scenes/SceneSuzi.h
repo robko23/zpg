@@ -27,7 +27,7 @@ public:
 
         shader->applyBlinnPhong();
 
-        auto light = Light(glm::vec3(0), glm::vec3(0), glm::vec3(0), glm::vec4(1));
+        auto light = LightGLSL(glm::vec3(0), glm::vec3(0), glm::vec3(0), glm::vec4(1));
         shader->addLight(light);
         auto material = Material(glm::vec4(0.1), glm::vec4(0.1), glm::vec4(0.1), 32);
         shader->setMaterial(material);

@@ -1,22 +1,15 @@
 #pragma once
 
-#include "../Camera.h"
 #include "Shader.h"
-#include "../ShaderLoaderV2.h"
-#include <optional>
-#include <memory>
-#include "glm/mat4x4.hpp"
-#include "../Projection.h"
+#define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/string_cast.hpp>
-#include "../Observer.h"
-#include "../gl_utils.h"
 #include "SSBO.h"
 #include "ShaderCommon.h"
 
 /*
  * Matching declaration for struct Light in fragment/lights.glsl
  */
-class alignas(16) Light final {
+class alignas(16) LightGLSL final {
 private:
     /*
      * More info about memory layout here:
@@ -36,9 +29,9 @@ private:
     int type = 1; // 0 - none, 1 - point, 2 - direction, 3 - reflector
     float cutoff = 0;
 public:
-    explicit Light(const glm::vec3 &position, const glm::vec3 &direction,
-                   const glm::vec3 &attenuation,
-                   const glm::vec4 &color) : position(position), direction(direction),
+    explicit LightGLSL(const glm::vec3 &position, const glm::vec3 &direction,
+                       const glm::vec3 &attenuation,
+                       const glm::vec4 &color) : position(position), direction(direction),
                                              attenuation(attenuation), color(color) {}
 
     [[nodiscard]] const glm::vec3 &getPosition() const {
@@ -46,7 +39,7 @@ public:
     }
 
     void setPosition(const glm::vec3 &position) {
-        Light::position = position;
+        LightGLSL::position = position;
     }
 
     [[nodiscard]] const glm::vec3 &getDirection() const {
@@ -54,7 +47,7 @@ public:
     }
 
     void setDirection(const glm::vec3 &direction) {
-        Light::direction = direction;
+        LightGLSL::direction = direction;
     }
 
     [[nodiscard]] const glm::vec3 &getAttenuation() const {
@@ -62,7 +55,7 @@ public:
     }
 
     void setAttenuation(const glm::vec3 &attenuation) {
-        Light::attenuation = attenuation;
+        LightGLSL::attenuation = attenuation;
     }
 
     [[nodiscard]] const glm::vec4 &getColor() const {
@@ -70,11 +63,11 @@ public:
     }
 
     void setColor(const glm::vec4 &color) {
-        Light::color = color;
+        LightGLSL::color = color;
     }
 };
 // So that I don't accidentally add more fields
-static_assert(sizeof(Light) == 80);
+static_assert(sizeof(LightGLSL) == 80);
 
 class Material {
 private:
@@ -126,7 +119,7 @@ public:
 class ShaderLights
         : public ShaderCommon<ShaderLights, "lights.glsl", "lights.glsl"> {
 private:
-    SSBO<Light> lights;
+    SSBO<LightGLSL> lights;
     int32_t flags = 0; // Lightning features, see fragment/lights.glsl
 
     const int32_t FLAG_AMBIENT = 1 << 0;
@@ -167,14 +160,14 @@ public:
      * Adds a light to the shader and sends it to the SSBO
      * @returns Index where the light is located. You can use it to modify it
      */
-    size_t addLight(Light light) {
+    size_t addLight(LightGLSL light) {
         size_t idx = lights.objects().size();
         lights.objects().emplace_back(std::move(light));
         lights.realloc();
         return idx;
     }
 
-    Light &getLight(size_t idx) {
+    LightGLSL &getLight(size_t idx) {
         DEBUG_ASSERT(idx < lights.objects().size());
         return lights.objects().at(idx);
     }

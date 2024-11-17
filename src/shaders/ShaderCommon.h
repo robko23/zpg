@@ -3,6 +3,11 @@
 //
 
 #pragma once
+#include "Shader.h"
+#include "../Projection.h"
+#include "../Camera.h"
+#include "../ShaderLoaderV2.h"
+#include <stdint.h>
 
 // Helper for string literals
 template<std::size_t N>

@@ -49,7 +49,7 @@ public:
         shaderLightning->setDiffuseEnabled(diffuseEnabled);
         shaderLightning->setSpecularEnabled(specularEnabled);
         shaderLightning->setHalfwayEnabled(blinnPhong);
-        auto light = Light(glm::vec3(0), glm::vec3(0), glm::vec3(0), glm::vec4(1));
+        auto light = LightGLSL(glm::vec3(0), glm::vec3(0), glm::vec3(0), glm::vec4(1));
         shaderLightning->addLight(light);
         auto material = Material(glm::vec4(0.1), glm::vec4(0.5), glm::vec4(0.7), 32);
         shaderLightning->setMaterial(material);

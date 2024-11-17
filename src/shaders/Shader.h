@@ -5,17 +5,17 @@
 #ifndef ZPG_SHADER_H
 #define ZPG_SHADER_H
 
-#include <GL/gl.h>
-#include "glm/mat4x4.hpp"
 #include <string>
 #include <expected>
 #include <iostream>
 #include <optional>
 #include "../drawable/Drawable.h"
+#include <GL/gl.h>
 #include <memory>
 #include "../assertions.h"
 #include "ShaderLoader.h"
 #include "../gl_utils.h"
+#include <glm/matrix.hpp>
 
 template<typename Derived>
 class ShaderBase {

@@ -95,11 +95,11 @@ public:
 
         shader->applyBlinnPhong();
 
-        auto light = Light(glm::vec3(0, 10, 0), glm::vec3(1), glm::vec3(0, 0.008, 0.008),
-                           glm::vec4(1));
-        shader->addLight(light);
+//        auto light = Light(glm::vec3(0, 10, 0), glm::vec3(1), glm::vec3(0, 0.008, 0.008),
+//                           glm::vec4(1));
+//        shader->addLight(light);
 
-        auto material = Material(glm::vec4(0.13), glm::vec4(0.419, 0.678, 0.274, 1), glm::vec4(0.047, 1, 0, 1), 64);
+        auto material = Material(glm::vec4(0.1), glm::vec4(0.419, 0.678, 0.274, 1), glm::vec4(0.047, 1, 0, 1), 64);
         shader->setMaterial(material);
 
         shaderLights = std::move(shader);

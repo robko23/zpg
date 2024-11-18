@@ -10,3 +10,6 @@
 [submodule "vendor/backward"]
 	path = vendor/backward
 	url = https://github.com/bombela/backward-cpp.git
+[submodule "vendor/soil"]
+	path = vendor/soil
+	url = https://github.com/paralin/soil.git

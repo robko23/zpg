@@ -1,6 +1,7 @@
 // This includes must be in this exact order, so put them on top to be sure
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
+#include <memory>
 
 #define GLM_ENABLE_EXPERIMENTAL
 
@@ -16,6 +17,7 @@
 #include "scenes/SceneSwitcher.h"
 #include "scenes/SceneTreeLights.h"
 #include "scenes/SceneTriangle.h"
+#include "scenes/SceneHelloTexture.h"
 
 int main() {
     GLFWcontext::inContext([]() {
@@ -30,9 +32,11 @@ int main() {
             auto suziScene = std::make_shared<SceneSuzi>(window, assetManager);
             auto ballsScene =
                 std::make_shared<SceneLightningBalls>(window, assetManager);
+			auto basicTextureScene = std::make_shared<SceneHeloTexture>(window, assetManager);
 
             auto mainScene = SceneSwitcher();
             mainScene.addScene(forest2);
+            mainScene.addScene(basicTextureScene);
             mainScene.addScene(fps);
             mainScene.addScene(suziScene);
             mainScene.addScene(ballsScene);

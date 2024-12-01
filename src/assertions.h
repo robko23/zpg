@@ -67,6 +67,24 @@ inline void printCurrentStacktrace() {
         abort();                                                               \
     }
 
+#define TODO()                                                                 \
+    {                                                                          \
+        fprintf(stderr, "Not yet implemented. In file: %s, line %d\n",         \
+                __FILE__, __LINE__);                                           \
+        printCurrentStacktrace();                                              \
+        abort();                                                               \
+    }
+
+#define TODOF(...)                                                             \
+    {                                                                          \
+        fprintf(stderr, "Not yet implemented. In file: %s, line %d\n",         \
+                __FILE__, __LINE__);                                           \
+        fprintf(stderr, __VA_ARGS__);                                          \
+        fprintf(stderr, "\n");                                                 \
+        printCurrentStacktrace();                                              \
+        abort();                                                               \
+    }
+
 #else // DEBUG_ASSERTIONS
 
 #define DEBUG_ASSERT_NOT_NULL(x)

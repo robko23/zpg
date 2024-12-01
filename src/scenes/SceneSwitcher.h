@@ -8,6 +8,7 @@
 #include <vector>
 #include <memory>
 #include "../assertions.h"
+#include "imgui.h"
 
 class SceneSwitcher : public Scene {
 private:

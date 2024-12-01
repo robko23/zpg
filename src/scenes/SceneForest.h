@@ -7,7 +7,6 @@
 #include "../Camera.h"
 #include "../GLWindow.h"
 #include "../Light.h"
-#include "../ShaderLoaderV2.h"
 #include "../Transformation.h"
 #include "../drawable/Bush.h"
 #include "../drawable/Tree.h"
@@ -89,11 +88,12 @@ class SceneForest : public BasicScene {
 
   public:
     explicit SceneForest(const std::shared_ptr<GLWindow> &window,
-                         const ShaderLoaderV2 &loader)
+                         const std::shared_ptr<AssetManager> &loader)
         : BasicScene(window), shaderLights(ShaderLights::load(loader).value()),
-        shaderLightCube(ShaderLightCube::load(loader).value()),
-          sun(loader, camera, shaderLights, shaderLightCube),
-          flashlight(Flashlight::construct(loader, camera, shaderLights, shaderLightCube)) {
+          shaderLightCube(ShaderLightCube::load(loader).value()),
+          sun(camera, shaderLights, shaderLightCube),
+          flashlight(
+              Flashlight::construct(camera, shaderLights, shaderLightCube)) {
         treeTrans = scatterObjects(numberOfTrees);
         bushesTrans = scatterObjects(numberOfBushes);
         camera.attach(shaderLights);
@@ -114,8 +114,8 @@ class SceneForest : public BasicScene {
 
         fireflies.reserve(NUM_FIREFLIES);
         for (int i = 0; i < NUM_FIREFLIES; i++) {
-            Firefly firefly(loader, camera, shaderLights, window, shaderLightCube);
-			firefly.setPosition(glm::vec3(i, 5, i));
+            Firefly firefly(camera, shaderLights, window, shaderLightCube);
+            firefly.setPosition(glm::vec3(i, 5, i));
             fireflies.emplace_back(std::move(firefly));
         }
     }

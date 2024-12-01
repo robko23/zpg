@@ -1,25 +1,24 @@
 //
 // Created by robko on 11/16/24.
 //
-#include "BasicScene.h"
-#include "../drawable/Tree.h"
 #include "../GLWindow.h"
-#include "../ShaderLoaderV2.h"
-#include "../shaders/ShaderLights.h"
-#include <memory>
 #include "../Light.h"
+#include "../drawable/Tree.h"
+#include "../shaders/ShaderLights.h"
+#include "BasicScene.h"
+#include <memory>
 
 // attenuation: 0, 0.008, 0.008
 // mat: vec3(13), vec3(107, 173, 70), vec3(12, 255, 0), 64
 
 class SceneTreeLights : public BasicScene {
-private:
+  private:
     Tree tree;
     std::shared_ptr<ShaderLights> shaderLightning;
     std::shared_ptr<ShaderLightCube> shaderLightCube;
     TransformationBuilder treeTransformations;
     PointLight pointLight;
-//    TransformationBuilder transformationBuilder1;
+    //    TransformationBuilder transformationBuilder1;
     float rotation_speed = 1;
     float lightMovementSpeed = 6;
     uint8_t lightMovementDirection = 0;
@@ -35,13 +34,11 @@ private:
     bool autoMoveXEnabled = false;
 
     void applyRotation() {
-        TransformationRotate* tree1ZRotation = dynamic_cast<TransformationRotate*>(
-                treeTransformations.at(0));
+        TransformationRotate *tree1ZRotation =
+            dynamic_cast<TransformationRotate *>(treeTransformations.at(0));
         DEBUG_ASSERT_NOT_NULL(tree1ZRotation);
-        tree1ZRotation->setAngleRadians(
-                tree1ZRotation->getAngleRadians() +
-                (rotation_speed * window->getDelta())
-        );
+        tree1ZRotation->setAngleRadians(tree1ZRotation->getAngleRadians() +
+                                        (rotation_speed * window->getDelta()));
     }
 
     void applyLightMovement() {
@@ -88,7 +85,8 @@ private:
 
     void renderLightPosSettings() {
         ImGui::Begin("Light position");
-        if (ImGui::Checkbox("Automatic light movement in X", &autoMoveXEnabled)) {
+        if (ImGui::Checkbox("Automatic light movement in X",
+                            &autoMoveXEnabled)) {
             updateLightPos();
         }
         if (ImGui::SliderFloat("Light X", &lightX, -20, 20)) {
@@ -103,13 +101,13 @@ private:
         ImGui::End();
     }
 
-public:
+  public:
     explicit SceneTreeLights(const std::shared_ptr<GLWindow> &window,
-                             const ShaderLoaderV2 &loader)
-            : BasicScene(window),
-              shaderLightning(ShaderLights::load(loader).value()),
-              shaderLightCube(ShaderLightCube::load(loader).value()),
-              pointLight(PointLight(loader, camera, shaderLightning, shaderLightCube)) {
+                             const std::shared_ptr<AssetManager> &loader)
+        : BasicScene(window),
+          shaderLightning(ShaderLights::load(loader).value()),
+          shaderLightCube(ShaderLightCube::load(loader).value()),
+          pointLight(PointLight(camera, shaderLightning, shaderLightCube)) {
         camera.attach(shaderLightning);
         camera.projection()->attach(shaderLightning);
 
@@ -117,7 +115,8 @@ public:
         shaderLightning->applyBlinnPhong();
 
         treeTransformations = TransformationBuilder().rotateY(0);
-//        transformationBuilder1 = std::move(transformationBuilder1.rotateZ(0).moveX(10).moveY(10));
+        //        transformationBuilder1 =
+        //        std::move(transformationBuilder1.rotateZ(0).moveX(10).moveY(10));
     }
 
     void renderScene() override {
@@ -135,13 +134,11 @@ public:
         shaderLightning->modelMatrix(treeTransformations.build());
         tree.draw();
 
-//        shader->modelMatrix(transformationBuilder1.build());
-//        tree.draw();
+        //        shader->modelMatrix(transformationBuilder1.build());
+        //        tree.draw();
 
         shaderLightning->unbind();
     }
 
-    const char* getId() override {
-        return "forest-lights";
-    }
+    const char *getId() override { return "forest-lights"; }
 };

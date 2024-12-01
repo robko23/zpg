@@ -4,15 +4,14 @@
 
 #pragma once
 
-#include "Shader.h"
-#include "../Projection.h"
+#include "../AssetManager.h"
 #include "../Camera.h"
-#include "../ShaderLoaderV2.h"
+#include "../Projection.h"
+#include "Shader.h"
 #include <stdint.h>
 
 // Helper for string literals
-template<std::size_t N>
-struct StringLiteral {
+template <std::size_t N> struct StringLiteral {
     consteval StringLiteral(const char (&str)[N]) {
         std::copy_n(str, N, value);
     }
@@ -34,42 +33,39 @@ struct StringLiteral {
      public ShaderCommon<Example, "example.glsl", "example.glsl"> {...}
 ```
 
- You can optionally change the names of uniform variables using additional template
- parameters.
- Template parameters order and their default values:
+ You can optionally change the names of uniform variables using additional
+template parameters. Template parameters order and their default values:
  "modelMatrix", "viewMatrix", "projectionMatrix"
  */
-template<
-        typename Self,
-        StringLiteral VertexName,
-        StringLiteral FragmentName,
-        StringLiteral ModelMatrixUniformName = "modelMatrix",
-        StringLiteral ViewMatrixUniformName = "viewMatrix",
-        StringLiteral ProjectionMatrixUniformName = "projectionMatrix"
->
-class ShaderCommon
-        : public Observer<CameraProperties>, public Observer<ProjectionMatrix>, public Shader {
-protected:
+template <typename Self, StringLiteral VertexName, StringLiteral FragmentName,
+          StringLiteral ModelMatrixUniformName = "modelMatrix",
+          StringLiteral ViewMatrixUniformName = "viewMatrix",
+          StringLiteral ProjectionMatrixUniformName = "projectionMatrix">
+class ShaderCommon : public Observer<CameraProperties>,
+                     public Observer<ProjectionMatrix>,
+                     public Shader {
+  protected:
     ShaderProgram program;
 
-    explicit ShaderCommon(ShaderProgram program) : program(std::move(program)) {
-    }
+    explicit ShaderCommon(ShaderProgram program)
+        : program(std::move(program)) {}
 
     virtual void onCameraPositionChange(glm::vec3 cameraPosition) {}
 
-public:
-    static std::optional<std::shared_ptr<Self>> load(const ShaderLoaderV2 &loader) {
-        auto maybeVertexShader = loader.loadVertex(VertexName.value);
+  public:
+    static std::optional<std::shared_ptr<Self>>
+    load(const std::shared_ptr<AssetManager> &loader) {
+        auto maybeVertexShader = loader->loadVertex(VertexName.value);
         if (!maybeVertexShader.has_value()) {
             return {};
         }
-        auto maybeFragmentShader = loader.loadFragment(FragmentName.value);
+        auto maybeFragmentShader = loader->loadFragment(FragmentName.value);
         if (!maybeFragmentShader.has_value()) {
             return {};
         }
 
-        auto maybeShaderProgram = ShaderProgram::link(maybeFragmentShader.value(),
-                                                      maybeVertexShader.value());
+        auto maybeShaderProgram = ShaderProgram::link(
+            maybeFragmentShader.value(), maybeVertexShader.value());
         if (!maybeShaderProgram.has_value()) {
             return {};
         }
@@ -93,19 +89,14 @@ public:
 
     void update(const ProjectionMatrix &action) override {
         this->bind();
-        program.bindParam(ProjectionMatrixUniformName.value, action.projectionMatrix);
+        program.bindParam(ProjectionMatrixUniformName.value,
+                          action.projectionMatrix);
         this->unbind();
     }
 
-    virtual void bind() override {
-        program.bind();
-    }
+    virtual void bind() override { program.bind(); }
 
-    void unbind() override {
-        program.unbind();
-    }
+    void unbind() override { program.unbind(); }
 
-    bool isBound() override {
-        return program.isBound();
-    }
+    bool isBound() override { return program.isBound(); }
 };

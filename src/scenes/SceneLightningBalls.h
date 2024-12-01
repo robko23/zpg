@@ -4,7 +4,6 @@
 
 #pragma once
 
-#include "Scene.h"
 #include "../drawable/Sphere.h"
 #include <memory>
 #include "../Camera.h"
@@ -12,6 +11,7 @@
 #include "../GLWindow.h"
 #include "../shaders/ShaderLights.h"
 #include "BasicScene.h"
+#include "../Transformation.h"
 
 class SceneLightningBalls : public BasicScene {
     Sphere sphere;
@@ -36,7 +36,7 @@ protected:
 
 public:
     explicit SceneLightningBalls(const std::shared_ptr<GLWindow> &window,
-                                 const ShaderLoaderV2 &loader)
+                                 const std::shared_ptr<AssetManager> &loader)
             : BasicScene(window), sphere(), ballsModel() {
         auto shader = ShaderLights::load(loader).value();
         camera.attach(shader);

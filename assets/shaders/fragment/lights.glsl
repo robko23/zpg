@@ -23,7 +23,8 @@ struct Light {
     vec4 color; // treated as vec4 - 16 bytes
     int type; // 4 bytes
     float cutoff; // 4 bytes
-    // 8 bytes padding - aligned to 16 bytes
+	uint id; // 4 bytes
+    // 4 bytes padding - aligned to 16 bytes
 };
 
 // Keep in sync with ShaderLights.h -> Material

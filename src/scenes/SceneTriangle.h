@@ -2,21 +2,22 @@
 // Created by robko on 11/2/24.
 //
 
-#include "Scene.h"
-#include <memory.h>
 #include "../GLWindow.h"
 #include "../drawable/Triangle.h"
 #include "../shaders/ShaderBasic.h"
+#include "Scene.h"
+#include <memory.h>
 
 class SceneTriangle : public Scene {
     Triangle triangle;
     std::shared_ptr<GLWindow> window;
     std::shared_ptr<ShaderBasic> shader;
     bool running = true;
-public:
 
-    explicit SceneTriangle(const std::shared_ptr<GLWindow> &window, const ShaderLoaderV2 &loader)
-            : window(window) {
+  public:
+    explicit SceneTriangle(const std::shared_ptr<GLWindow> &window,
+                           const std::shared_ptr<AssetManager> &loader)
+        : window(window) {
         shader = ShaderBasic::load(loader).value();
         shader->update(CameraProperties::defaultProps());
         shader->update(ProjectionMatrix::_default());
@@ -40,7 +41,5 @@ public:
         return false;
     }
 
-    const char* getId() override {
-        return "basic-triangle";
-    }
+    const char *getId() override { return "basic-triangle"; }
 };

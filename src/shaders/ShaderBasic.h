@@ -1,18 +1,13 @@
 #pragma once
 
-#include "../Camera.h"
-#include "Shader.h"
-#include "../ShaderLoaderV2.h"
-#include <optional>
-#include <memory>
-#include "glm/mat4x4.hpp"
-#include "../Projection.h"
-#include <glm/gtx/string_cast.hpp>
-#include "../Observer.h"
 #include "ShaderCommon.h"
+#ifndef GLM_ENABLE_EXPERIMENTAL
+#define GLM_ENABLE_EXPERIMENTAL
+#endif // !GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/string_cast.hpp>
 
 class ShaderBasic
-        : public ShaderCommon<ShaderBasic, "basic.glsl", "basic.glsl"> {
-public:
+    : public ShaderCommon<ShaderBasic, "basic.glsl", "basic.glsl"> {
+  public:
     using ShaderCommon::ShaderCommon;
 };

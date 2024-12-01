@@ -1,5 +1,8 @@
 #pragma once
 
+#include "Camera.h"
+#include "Observer.h"
+#include "Projection.h"
 #include "assertions.h"
 #include <GL/glew.h>
 
@@ -9,7 +12,8 @@
 #include <SOIL.h>
 #include <memory>
 
-class Skybox {
+class Skybox : public Observer<CameraProperties>,
+               public Observer<ProjectionMatrix> {
   private:
     std::shared_ptr<Cubemap> cubemap;
     std::shared_ptr<ShaderSkybox> shader;
@@ -29,7 +33,6 @@ class Skybox {
     GLuint VAO = 0;
     GLuint VBO = 0;
 
-  public:
     Skybox(const std::shared_ptr<AssetManager> &assetManager)
         : cubemap(assetManager->loadCubemap()),
           shader(ShaderSkybox::load(assetManager).value()) {
@@ -52,6 +55,23 @@ class Skybox {
                               (GLvoid *)0);
         DEBUG_ASSERT(0 != VBO);
         DEBUG_ASSERT(0 != VAO);
+    }
+
+  public:
+    static std::shared_ptr<Skybox>
+    construct(const std::shared_ptr<AssetManager> &assetManager,
+              Camera &camera) {
+        auto self = std::shared_ptr<Skybox>(new Skybox(assetManager));
+        // camera.attach(self);
+        return self;
+    }
+
+    void update(const CameraProperties &props) override {
+        shader->update(props);
+    }
+
+    void update(const ProjectionMatrix &props) override {
+        shader->update(props);
     }
 
     void render() {

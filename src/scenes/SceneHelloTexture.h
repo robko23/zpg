@@ -7,17 +7,17 @@
 #include "../Transformation.h"
 #include "../drawable/PlaneWithTexture.h"
 #include "../shaders/ShaderBasicTexture.h"
-#include "Scene.h"
+#include "BasicScene.h"
 #include <memory.h>
+#include <memory>
 
-class SceneHeloTexture : public Scene {
+class SceneHeloTexture : public BasicScene {
     TestModel plane;
     std::shared_ptr<Texture> woodenFence;
     std::shared_ptr<Texture> grass;
     std::shared_ptr<GLWindow> window;
     std::shared_ptr<ShaderBasicTexture> shader;
-    Skybox skybox;
-    bool running = true;
+    std::shared_ptr<Skybox> skybox;
     TransformationBuilder trans;
 
     void applyRot() {
@@ -44,21 +44,21 @@ class SceneHeloTexture : public Scene {
   public:
     explicit SceneHeloTexture(const std::shared_ptr<GLWindow> &window,
                               const std::shared_ptr<AssetManager> &loader)
-        : woodenFence(loader->loadTexture("wooden_fence.png")),
+        : BasicScene(window),
+          woodenFence(loader->loadTexture("wooden_fence.png")),
           grass(loader->loadTexture("grass.png")), window(window),
-          shader(ShaderBasicTexture::load(loader).value()), skybox(loader) 
-		{
+          shader(ShaderBasicTexture::load(loader).value()),
+          skybox(Skybox::construct(loader, camera)) {
         shader->update(CameraProperties::defaultProps());
         shader->update(ProjectionMatrix::_default());
         trans = TransformationBuilder().moveX(0).rotateY(0);
     }
 
-    void render() override {
-        skybox.render();
+    void renderScene() override {
+        skybox->render();
+
         applyRot();
-        if (window->isPressedAndClear(GLFW_KEY_ESCAPE)) {
-            running = false;
-        }
+
         shader->bind();
         moveObj1();
         shader->modelMatrix(trans.build());
@@ -71,14 +71,6 @@ class SceneHeloTexture : public Scene {
         plane.draw();
 
         shader->unbind();
-    }
-
-    bool shouldExit() override {
-        if (!running) {
-            running = true;
-            return true;
-        }
-        return false;
     }
 
     const char *getId() override { return "basic-texture-plane"; }

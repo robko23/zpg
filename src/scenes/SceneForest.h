@@ -7,6 +7,7 @@
 #include "../Camera.h"
 #include "../GLWindow.h"
 #include "../Light.h"
+#include "../Skybox.h"
 #include "../Transformation.h"
 #include "../drawable/Bush.h"
 #include "../drawable/Tree.h"
@@ -36,6 +37,8 @@ class SceneForest : public BasicScene {
 
     int numberOfBushes = 300;
     std::vector<glm::mat4> bushesTrans;
+
+	std::shared_ptr<Skybox> skybox;
 
     void renderMenu() override {
         ImGui::Begin("SceneForest controls");
@@ -93,7 +96,8 @@ class SceneForest : public BasicScene {
           shaderLightCube(ShaderLightCube::load(loader).value()),
           sun(camera, shaderLights, shaderLightCube),
           flashlight(
-              Flashlight::construct(camera, shaderLights, shaderLightCube)) {
+              Flashlight::construct(camera, shaderLights, shaderLightCube)),
+          skybox(Skybox::construct(loader, camera)) {
         treeTrans = scatterObjects(numberOfTrees);
         bushesTrans = scatterObjects(numberOfBushes);
         camera.attach(shaderLights);
@@ -121,6 +125,7 @@ class SceneForest : public BasicScene {
     }
 
     void renderScene() override {
+        skybox->render();
         shaderLightCube->bind();
         sun.render();
         flashlight->render();

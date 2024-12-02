@@ -44,11 +44,13 @@ add_subdirectory(vendor/glfw)
 add_subdirectory(vendor/glew/build/cmake)
 add_subdirectory(vendor/backward)
 add_subdirectory(vendor/soil)
+add_subdirectory(vendor/assimp)
 
 include_directories(vendor/glfw/include)
 include_directories(vendor/glm/)
 include_directories(vendor/glew/include)
 include_directories(vendor/soil/inc/SOIL)
+include_directories(vendor/assimp/include)
 
 if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-long-long -pedantic -Wno-unknown-pragmas -Wno-sign-compare -g")
@@ -58,4 +60,4 @@ add_executable(zpg ${SOURCES} ${IMGUI_SOURCES})
 
 target_include_directories(zpg PRIVATE vendor/imgui vendor/imgui/backends)
 
-target_link_libraries(zpg PRIVATE glfw ${OPENGL_gl_LIBRARY} glew Backward::Interface bfd dl soil)
+target_link_libraries(zpg PRIVATE glfw ${OPENGL_gl_LIBRARY} glew Backward::Interface bfd dl soil assimp)

@@ -12,12 +12,12 @@
 
 #include "scenes/SceneForest.h"
 #include "scenes/SceneFpsDisplay.h"
+#include "scenes/SceneHelloTexture.h"
 #include "scenes/SceneLightningBalls.h"
 #include "scenes/SceneSuzi.h"
 #include "scenes/SceneSwitcher.h"
 #include "scenes/SceneTreeLights.h"
 #include "scenes/SceneTriangle.h"
-#include "scenes/SceneHelloTexture.h"
 
 int main() {
     GLFWcontext::inContext([]() {
@@ -32,7 +32,8 @@ int main() {
             auto suziScene = std::make_shared<SceneSuzi>(window, assetManager);
             auto ballsScene =
                 std::make_shared<SceneLightningBalls>(window, assetManager);
-			auto basicTextureScene = std::make_shared<SceneHeloTexture>(window, assetManager);
+            auto basicTextureScene =
+                std::make_shared<SceneHeloTexture>(window, assetManager);
 
             auto mainScene = SceneSwitcher();
             mainScene.addScene(forest2);

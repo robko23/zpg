@@ -70,7 +70,7 @@ class ShaderCommon : public Observer<CameraProperties>,
             return {};
         }
 
-        auto inner = Self(maybeShaderProgram.value());
+        auto inner = Self(std::move(maybeShaderProgram.value()));
         auto self = std::make_shared<Self>(std::move(inner));
         return std::move(self);
     }

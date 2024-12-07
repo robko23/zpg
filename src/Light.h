@@ -17,7 +17,7 @@
 #include <glm/glm.hpp>
 #include <memory>
 #include <random>
-#include <stdint.h>
+#include <cstdint>
 
 class Light {
   protected:

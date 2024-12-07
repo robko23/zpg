@@ -3,86 +3,56 @@
 #include "Camera.h"
 #include "Observer.h"
 #include "Projection.h"
-#include "assertions.h"
+#include "Transformation.h"
 #include <GL/glew.h>
 
 #include "AssetManager.h"
+#include "drawable/Cube.h"
 #include "shaders/ShaderSkybox.h"
 #include <GL/gl.h>
 #include <SOIL.h>
 #include <memory>
 
-class Skybox : public Observer<CameraProperties>,
-               public Observer<ProjectionMatrix> {
+class Skybox : public Observer<CameraProperties> {
   private:
+    Cube cube;
+    std::shared_ptr<ShaderSkybox> shaderSkybox;
     std::shared_ptr<Cubemap> cubemap;
-    std::shared_ptr<ShaderSkybox> shader;
-    const static inline float skycube[108] = {
-        -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, 1.0f,  -1.0f, 1.0f,  1.0f,  1.0f,
-        1.0f,  -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, 1.0f,  -1.0f, 1.0f,  -1.0f,
-        1.0f,  -1.0f, -1.0f, -1.0f, 1.0f,  -1.0f, -1.0f, 1.0f,  1.0f,  -1.0f,
-        1.0f,  -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, -1.0f,
-        1.0f,  1.0f,  -1.0f, 1.0f,  -1.0f, 1.0f,  -1.0f, 1.0f,  -1.0f, -1.0f,
-        1.0f,  -1.0f, -1.0f, -1.0f, -1.0f, 1.0f,  1.0f,  -1.0f, -1.0f, 1.0f,
-        1.0f,  -1.0f, 1.0f,  1.0f,  1.0f,  1.0f,  1.0f,  -1.0f, -1.0f, 1.0f,
-        1.0f,  -1.0f, 1.0f,  -1.0f, -1.0f, 1.0f,  1.0f,  1.0f,  1.0f,  -1.0f,
-        1.0f,  1.0f,  1.0f,  1.0f,  1.0f,  1.0f,  -1.0f, -1.0f, 1.0f,  -1.0f,
-        1.0f,  1.0f,  1.0f,  -1.0f, 1.0f,  -1.0f, -1.0f, 1.0f,  1.0f,  1.0f,
-        1.0f,  1.0f,  -1.0f, 1.0f,  1.0f,  1.0f,  -1.0f, 1.0f};
+    TransformationTranslate translate;
+    bool follow = true;
 
-    GLuint VAO = 0;
-    GLuint VBO = 0;
-
-    Skybox(const std::shared_ptr<AssetManager> &assetManager)
-        : cubemap(assetManager->loadCubemap()),
-          shader(ShaderSkybox::load(assetManager).value()) {
-        shader->update(CameraProperties::defaultProps());
-        shader->update(ProjectionMatrix::_default());
-
-        // Vertex Array Object (VAO)
-        glGenBuffers(1, &VBO); // generate the VBO
-        glBindBuffer(GL_ARRAY_BUFFER, VBO);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(skycube), &skycube[0],
-                     GL_STATIC_DRAW);
-
-        glGenVertexArrays(1, &VAO); // generate the VAO
-        glBindVertexArray(VAO);     // bind the VAO
-        glBindBuffer(GL_ARRAY_BUFFER, VBO);
-
-        // enable vertex attributes
-        glEnableVertexAttribArray(0);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float),
-                              (GLvoid *)0);
-        DEBUG_ASSERT(0 != VBO);
-        DEBUG_ASSERT(0 != VAO);
+    explicit Skybox(Camera &camera, const std::shared_ptr<AssetManager> am)
+        : shaderSkybox(ShaderSkybox::load(am).value()),
+          cubemap(am->loadCubemap()),
+          translate(TransformationTranslate(glm::vec3(0))) {
+        camera.attach(shaderSkybox);
+        camera.projection()->attach(shaderSkybox);
     }
 
   public:
+    Skybox(Skybox &other) = delete;
+
     static std::shared_ptr<Skybox>
-    construct(const std::shared_ptr<AssetManager> &assetManager,
-              Camera &camera) {
-        auto self = std::shared_ptr<Skybox>(new Skybox(assetManager));
-        // camera.attach(self);
+    construct(Camera &camera, const std::shared_ptr<AssetManager> am) {
+        auto self = std::shared_ptr<Skybox>(new Skybox(camera, am));
+        camera.attach(self);
         return self;
     }
 
     void update(const CameraProperties &props) override {
-        shader->update(props);
+        if (follow) {
+            translate.setPosition(props.cameraPosition);
+        }
     }
 
-    void update(const ProjectionMatrix &props) override {
-        shader->update(props);
-    }
+    void setFollow(bool val) { follow = val; }
 
     void render() {
-        shader->bind();
-        shader->modelMatrix(glm::mat4(1));
-        shader->setCubemapId(cubemap->getTextureUnit());
-
-        glBindVertexArray(VAO);
-        glDrawArrays(GL_TRIANGLES, 0, 108);
-
-        glClear(GL_DEPTH_BUFFER_BIT);
-        shader->unbind();
+        shaderSkybox->bind();
+        shaderSkybox->modelMatrix(translate.apply(glm::mat4(1)));
+        shaderSkybox->setCubemapId(cubemap->getTextureUnit());
+        cube.draw();
+        shaderSkybox->unbind();
+		glClear(GL_DEPTH_BUFFER_BIT);
     }
 };

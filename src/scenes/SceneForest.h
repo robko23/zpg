@@ -38,7 +38,9 @@ class SceneForest : public BasicScene {
     int numberOfBushes = 300;
     std::vector<glm::mat4> bushesTrans;
 
-	std::shared_ptr<Skybox> skybox;
+    // std::shared_ptr<Skybox> skybox;
+    std::shared_ptr<Skybox> skybox;
+    bool followSkybox = true;
 
     void renderMenu() override {
         ImGui::Begin("SceneForest controls");
@@ -60,6 +62,10 @@ class SceneForest : public BasicScene {
         if (prevScatterRadius != maxScatterRadius) {
             treeTrans = scatterObjects(numberOfTrees);
             bushesTrans = scatterObjects(numberOfBushes);
+        }
+
+        if (ImGui::Checkbox("Follow skybox", &followSkybox)) {
+            skybox->setFollow(followSkybox);
         }
 
         ImGui::End();
@@ -97,7 +103,7 @@ class SceneForest : public BasicScene {
           sun(camera, shaderLights, shaderLightCube),
           flashlight(
               Flashlight::construct(camera, shaderLights, shaderLightCube)),
-          skybox(Skybox::construct(loader, camera)) {
+          skybox(Skybox::construct(camera, loader)) {
         treeTrans = scatterObjects(numberOfTrees);
         bushesTrans = scatterObjects(numberOfBushes);
         camera.attach(shaderLights);
@@ -126,6 +132,7 @@ class SceneForest : public BasicScene {
 
     void renderScene() override {
         skybox->render();
+        // skybox->render();
         shaderLightCube->bind();
         sun.render();
         flashlight->render();

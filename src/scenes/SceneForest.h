@@ -11,12 +11,47 @@
 #include "../Transformation.h"
 #include "../drawable/Bush.h"
 #include "../drawable/Tree.h"
+#include "../shaders/ShaderBasicTexture.h"
 #include "../shaders/ShaderLights.h"
 #include "BasicScene.h"
 #include "imgui.h"
 #include <cmath>
 #include <memory>
 #include <random>
+
+class ForestFloor {
+  private:
+    std::shared_ptr<Texture> textureGrass;
+    std::shared_ptr<ShaderBasicTexture> shaderTexture;
+    Cube cube;
+    glm::mat4 modelMatrix;
+
+  public:
+    explicit ForestFloor(const std::shared_ptr<AssetManager> &am,
+                         Camera &camera)
+        : textureGrass(am->loadTexture("grass.png")),
+          shaderTexture(ShaderBasicTexture::load(am).value()) {
+        camera.attach(shaderTexture);
+        camera.projection()->attach(shaderTexture);
+        modelMatrix = TransformationBuilder()
+                          .translate(glm::vec3(0))
+                          .scale(50, 0.1, 50)
+                          .build();
+
+        shaderTexture->bind();
+        shaderTexture->setTextureId(textureGrass->getTextureUnit());
+        shaderTexture->modelMatrix(modelMatrix);
+        shaderTexture->unbind();
+    }
+
+    void render() {
+        shaderTexture->bind();
+
+        cube.draw();
+
+        shaderTexture->unbind();
+    }
+};
 
 class SceneForest : public BasicScene {
   private:
@@ -38,9 +73,10 @@ class SceneForest : public BasicScene {
     int numberOfBushes = 300;
     std::vector<glm::mat4> bushesTrans;
 
-    // std::shared_ptr<Skybox> skybox;
     std::shared_ptr<Skybox> skybox;
     bool followSkybox = true;
+
+    ForestFloor floor;
 
     void renderMenu() override {
         ImGui::Begin("SceneForest controls");
@@ -103,7 +139,7 @@ class SceneForest : public BasicScene {
           sun(camera, shaderLights, shaderLightCube),
           flashlight(
               Flashlight::construct(camera, shaderLights, shaderLightCube)),
-          skybox(Skybox::construct(camera, loader)) {
+          skybox(Skybox::construct(camera, loader)), floor(loader, camera) {
         treeTrans = scatterObjects(numberOfTrees);
         bushesTrans = scatterObjects(numberOfBushes);
         camera.attach(shaderLights);
@@ -132,6 +168,7 @@ class SceneForest : public BasicScene {
 
     void renderScene() override {
         skybox->render();
+        floor.render();
         // skybox->render();
         shaderLightCube->bind();
         sun.render();

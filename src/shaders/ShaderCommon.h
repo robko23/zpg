@@ -8,7 +8,6 @@
 #include "../Camera.h"
 #include "../Projection.h"
 #include "Shader.h"
-#include <stdint.h>
 
 // Helper for string literals
 template <std::size_t N> struct StringLiteral {
@@ -94,7 +93,7 @@ class ShaderCommon : public Observer<CameraProperties>,
         this->unbind();
     }
 
-    virtual void bind() override { program.bind(); }
+    void bind() override { program.bind(); }
 
     void unbind() override { program.unbind(); }
 

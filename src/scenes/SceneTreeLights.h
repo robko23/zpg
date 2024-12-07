@@ -34,7 +34,7 @@ class SceneTreeLights : public BasicScene {
     bool autoMoveXEnabled = false;
 
     void applyRotation() {
-        TransformationRotate *tree1ZRotation =
+        auto *tree1ZRotation =
             dynamic_cast<TransformationRotate *>(treeTransformations.at(0));
         DEBUG_ASSERT_NOT_NULL(tree1ZRotation);
         tree1ZRotation->setAngleRadians(tree1ZRotation->getAngleRadians() +

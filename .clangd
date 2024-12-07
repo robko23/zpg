@@ -1,2 +1,9 @@
 CompileFlags:
   CompilationDatabase: "."
+
+Diagnostics:
+  ClangTidy:
+    Add: modernize*
+    Remove: [modernize-use-trailing-return-type, modernize-use-std-print]
+    CheckOptions:
+      readability-identifier-naming.VariableCase: CamelCase

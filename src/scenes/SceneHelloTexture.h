@@ -21,22 +21,19 @@ class SceneHeloTexture : public BasicScene {
     TransformationBuilder trans;
 
     void applyRot() {
-        TransformationRotate *rot =
-            dynamic_cast<TransformationRotate *>(trans.at(1));
+        auto *rot = dynamic_cast<TransformationRotate *>(trans.at(1));
         DEBUG_ASSERT_NOT_NULL(rot);
         rot->setAngleRadians(rot->getAngleRadians() + (1 * window->getDelta()));
     }
 
     void moveObj1() {
-        TransformationTranslate *translate =
-            dynamic_cast<TransformationTranslate *>(trans.at(0));
+        auto *translate = dynamic_cast<TransformationTranslate *>(trans.at(0));
         DEBUG_ASSERT_NOT_NULL(translate);
         translate->setPosition(glm::vec3(0.5, 0, 0));
     }
 
     void moveObj2() {
-        TransformationTranslate *translate =
-            dynamic_cast<TransformationTranslate *>(trans.at(0));
+        auto *translate = dynamic_cast<TransformationTranslate *>(trans.at(0));
         DEBUG_ASSERT_NOT_NULL(translate);
         translate->setPosition(glm::vec3(-0.5, 0, 0));
     }
@@ -48,7 +45,7 @@ class SceneHeloTexture : public BasicScene {
           woodenFence(loader->loadTexture("wooden_fence.png")),
           grass(loader->loadTexture("grass.png")), window(window),
           shader(ShaderBasicTexture::load(loader).value()),
-          skybox(Skybox::construct(loader, camera)) {
+          skybox(Skybox::construct(camera, loader)) {
         shader->update(CameraProperties::defaultProps());
         shader->update(ProjectionMatrix::_default());
         trans = TransformationBuilder().moveX(0).rotateY(0);

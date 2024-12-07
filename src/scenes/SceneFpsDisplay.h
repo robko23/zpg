@@ -5,6 +5,7 @@
 #pragma once
 
 #include "Scene.h"
+#include "imgui.h"
 #include <memory>
 #include <chrono>
 

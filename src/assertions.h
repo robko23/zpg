@@ -8,8 +8,6 @@
 #include <csignal>
 #include <cstdio>
 #include <cstdlib>
-#include <iostream>
-#include <stacktrace>
 #define BACKWARD_HAS_BFD 1
 #include <backward.hpp>
 

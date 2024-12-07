@@ -3,8 +3,6 @@
 #include "Shader.h"
 #include <algorithm>
 #include <cstdint>
-#include <iostream>
-#include <ostream>
 #define GLM_ENABLE_EXPERIMENTAL
 #include "SSBO.h"
 #include "ShaderCommon.h"
@@ -44,7 +42,7 @@ class alignas(16) LightGLSL final {
     explicit LightGLSL(const glm::vec3 &position, const glm::vec3 &direction,
                        const glm::vec3 &attenuation, const glm::vec4 &color)
         : position(position), direction(direction), attenuation(attenuation),
-          color(color), id(UINT32_MAX) {}
+          color(color) {}
 
     [[nodiscard]] const glm::vec3 &getPosition() const { return position; }
 

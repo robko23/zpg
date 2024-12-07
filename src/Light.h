@@ -14,10 +14,11 @@
 #include "shaders/ShaderLightCube.h"
 #include "shaders/ShaderLights.h"
 #include <cstdint>
+#include <cstdio>
 #include <glm/glm.hpp>
 #include <memory>
+#include <print>
 #include <random>
-#include <cstdint>
 
 class Light {
   protected:
@@ -70,7 +71,7 @@ class Light {
         ImGui::End();
     }
 
-    LightGLSL &getLight() const {
+    [[nodiscard]] LightGLSL &getLight() const {
         return shaderLightning->getLight(lightIndex);
     }
 
@@ -89,7 +90,7 @@ class Light {
         light.setCutoff(cutoff);
         shaderLightCube->setLightColor(light.getColor());
         shaderLightning->updateLight(lightIndex);
-        TransformationTranslate *translate =
+        auto *translate =
             dynamic_cast<TransformationTranslate *>(transformations.at(0));
         DEBUG_ASSERT_NOT_NULL(translate);
         translate->setPosition(position);
@@ -202,7 +203,7 @@ class Light {
 class PointLight : public Light {
     using Light::Light;
 
-    const char *getId() const override { return "point-light"; }
+    [[nodiscard]] const char *getId() const override { return "point-light"; }
 };
 
 class Flashlight : public Light, public Observer<CameraProperties> {
@@ -239,7 +240,7 @@ class Flashlight : public Light, public Observer<CameraProperties> {
         }
     }
 
-    const char *getId() const override { return "flashlight"; }
+    [[nodiscard]] const char *getId() const override { return "flashlight"; }
 };
 
 class Firefly : public Light {
@@ -306,7 +307,7 @@ class Firefly : public Light {
         double seed = seed_distribution(seedGenerator);
         generator.seed(static_cast<float>(seed));
 
-        TransformationScale *scale =
+        auto *scale =
             dynamic_cast<TransformationScale *>(transformations.at(1));
         DEBUG_ASSERT_NOT_NULL(scale);
         scale->setScale(0.05);

@@ -80,7 +80,7 @@ public:
     TransformationBuilder(TransformationBuilder &&other) : transformations(
             std::move(other.transformations)) {}
 
-    TransformationBuilder(TransformationBuilder &other) : transformations(other.transformations) {}
+    TransformationBuilder(TransformationBuilder &other) = default;
 
     explicit TransformationBuilder() : transformations() {}
 

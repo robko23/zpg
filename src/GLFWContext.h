@@ -5,7 +5,11 @@
 #ifndef ZPG_GLFWCONTEXT_H
 #define ZPG_GLFWCONTEXT_H
 
+#include "GLFW/glfw3.h"
 #include <functional>
+#include <iostream>
+#include <ostream>
+#include <stdexcept>
 
 class GLFWcontext {
 

@@ -35,7 +35,7 @@ class ForestFloor {
         camera.projection()->attach(shaderTexture);
         modelMatrix = TransformationBuilder()
                           .translate(glm::vec3(0))
-                          .scale(50, 0.1, 50)
+                          .scale(70, 0.1, 70)
                           .build();
 
         shaderTexture->bind();
@@ -77,6 +77,11 @@ class SceneForest : public BasicScene {
     bool followSkybox = true;
 
     ForestFloor floor;
+
+    std::shared_ptr<DynamicModel> houseModel;
+    std::shared_ptr<Texture> houseTexture;
+    std::shared_ptr<ShaderBasicTexture> textureShader;
+    glm::mat4 houseModelMatrix;
 
     void renderMenu() override {
         ImGui::Begin("SceneForest controls");
@@ -139,11 +144,17 @@ class SceneForest : public BasicScene {
           sun(camera, shaderLights, shaderLightCube),
           flashlight(
               Flashlight::construct(camera, shaderLights, shaderLightCube)),
-          skybox(Skybox::construct(camera, loader)), floor(loader, camera) {
+          skybox(Skybox::construct(camera, loader)), floor(loader, camera),
+          houseModel(loader->loadModel("house.obj")),
+          houseTexture(loader->loadTexture("house.png")),
+          textureShader(ShaderBasicTexture::load(loader).value()) {
         treeTrans = scatterObjects(numberOfTrees);
         bushesTrans = scatterObjects(numberOfBushes);
         camera.attach(shaderLights);
         camera.projection()->attach(shaderLights);
+
+        camera.attach(textureShader);
+        camera.projection()->attach(textureShader);
 
         shaderLights->applyBlinnPhong();
 
@@ -164,12 +175,24 @@ class SceneForest : public BasicScene {
             firefly.setPosition(glm::vec3(i, 5, i));
             fireflies.emplace_back(std::move(firefly));
         }
+
+        houseModelMatrix = TransformationBuilder()
+                               .moveX(55)
+                               // 90 deg
+                               .rotateY(1.570796)
+                               .build();
     }
 
     void renderScene() override {
         skybox->render();
         floor.render();
-        // skybox->render();
+
+        textureShader->bind();
+        textureShader->setTextureId(houseTexture->getTextureUnit());
+        textureShader->modelMatrix(houseModelMatrix);
+        houseModel->draw();
+        textureShader->unbind();
+
         shaderLightCube->bind();
         sun.render();
         flashlight->render();

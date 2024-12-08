@@ -27,7 +27,7 @@ class Light {
     float attenuationX = 0;
     float attenuationY = 0.1;
     float attenuationZ = 0.02;
-    glm::vec3 lightColor = glm::vec3(1);
+    glm::vec3 lightColor = glm::vec3(0.7);
     glm::vec3 direction = glm::vec3(1);
     float cutoff = 0.8;
 

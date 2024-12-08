@@ -14,6 +14,7 @@
 #include "../shaders/ShaderLightTexture.h"
 #include "../shaders/ShaderLights.h"
 #include "BasicScene.h"
+#include "glm/trigonometric.hpp"
 #include "imgui.h"
 #include <cmath>
 #include <memory>
@@ -43,7 +44,7 @@ class ForestFloor {
         camera.projection()->attach(shaderTexture);
         modelMatrix = TransformationBuilder()
                           .translate(glm::vec3(0))
-                          .scale(70, 0.1, 70)
+                          .scale(100, 0.1, 100)
                           .build();
 
         shaderTexture->bind();
@@ -74,13 +75,13 @@ class SceneForest : public BasicScene {
     std::shared_ptr<Flashlight> flashlight;
     std::vector<Firefly> fireflies;
 
-    const size_t NUM_FIREFLIES = 10;
+    const size_t NUM_FIREFLIES = 2;
     float maxScatterRadius = 50;
 
-    int numberOfTrees = 50;
+    int numberOfTrees = 80;
     std::vector<glm::mat4> treeTrans;
 
-    int numberOfBushes = 300;
+    int numberOfBushes = 50;
     std::vector<glm::mat4> bushesTrans;
 
     std::shared_ptr<Skybox> skybox;
@@ -190,9 +191,9 @@ class SceneForest : public BasicScene {
         }
 
         houseModelMatrix = TransformationBuilder()
-                               .moveX(55)
-                               // 90 deg
-                               .rotateY(1.570796)
+                               .moveX(70)
+                               .rotateY(glm::radians(90.))
+                               .scale(3)
                                .build();
 
         shaderLightsTexture->setMaterial(houseModel->getMaterial());

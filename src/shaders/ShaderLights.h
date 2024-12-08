@@ -103,12 +103,17 @@ class ShaderLights
     }
 
     void setMaterial(const Material &material) {
-        program.bind();
+        auto needsBinding = !program.isBound();
+        if (needsBinding) {
+            program.bind();
+        }
         program.bindParam("material.ambient", material.getAmbient());
         program.bindParam("material.diffuse", material.getDiffuse());
         program.bindParam("material.specular", material.getSpecular());
         program.bindParam("material.shininess", material.getShininess());
-        program.unbind();
+        if (needsBinding) {
+            program.unbind();
+        }
     }
 
     void bind() override {

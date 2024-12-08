@@ -32,12 +32,17 @@ class ShaderLightTexture
         : ShaderCommon(std::move(other)), lights(std::move(other.lights)) {}
 
     void setMaterial(const Material &material) {
-        program.bind();
+        auto needsBidning = !program.isBound();
+        if (needsBidning) {
+            program.bind();
+        }
         program.bindParam("material.ambient", material.getAmbient());
         program.bindParam("material.diffuse", material.getDiffuse());
         program.bindParam("material.specular", material.getSpecular());
         program.bindParam("material.shininess", material.getShininess());
-        program.unbind();
+        if (needsBidning) {
+            program.unbind();
+        }
     }
 
     void bind() override {

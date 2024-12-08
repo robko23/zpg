@@ -90,6 +90,8 @@ class SceneForest : public BasicScene {
     ForestFloor floor;
 
     std::shared_ptr<DynamicModel> houseModel;
+    std::shared_ptr<DynamicModel> loginModel;
+    glm::mat4 loginModelMatrix;
     std::shared_ptr<Texture> houseTexture;
     std::shared_ptr<ShaderLightTexture> shaderLightsTexture;
     glm::mat4 houseModelMatrix;
@@ -158,6 +160,7 @@ class SceneForest : public BasicScene {
           skybox(Skybox::construct(camera, loader, "skybox-night", "png")),
           floor(loader, camera, lights),
           houseModel(loader->loadModel("house.obj")),
+          loginModel(loader->loadModel("login.obj")),
           houseTexture(loader->loadTexture("house.png")),
           shaderLightsTexture(ShaderLightTexture::load(loader).value()) {
         shaderLights->setLightCollection(lights);
@@ -178,11 +181,6 @@ class SceneForest : public BasicScene {
 
         flashlight->setRenderCube(false);
 
-        auto material =
-            Material(glm::vec4(0.1), glm::vec4(0.419, 0.678, 0.274, 1),
-                     glm::vec4(0.047, 1, 0, 1), 64);
-        shaderLights->setMaterial(material);
-
         fireflies.reserve(NUM_FIREFLIES);
         for (int i = 0; i < NUM_FIREFLIES; i++) {
             Firefly firefly(camera, lights, window, shaderLightCube);
@@ -196,7 +194,7 @@ class SceneForest : public BasicScene {
                                .scale(3)
                                .build();
 
-        shaderLightsTexture->setMaterial(houseModel->getMaterial());
+        loginModelMatrix = TransformationBuilder().scale(3).moveY(3).build();
     }
 
     void renderScene() override {
@@ -204,6 +202,7 @@ class SceneForest : public BasicScene {
         floor.render();
 
         shaderLightsTexture->bind();
+        shaderLightsTexture->setMaterial(houseModel->getMaterial());
         shaderLightsTexture->setTextureUnitId(houseTexture->getTextureUnit());
         shaderLightsTexture->modelMatrix(houseModelMatrix);
         houseModel->draw();
@@ -217,6 +216,15 @@ class SceneForest : public BasicScene {
         }
         shaderLightCube->unbind();
         shaderLights->bind();
+
+        shaderLights->setMaterial(
+            Material(glm::vec4(0.1), glm::vec4(0.6), glm::vec4(0.6), 64));
+        shaderLights->modelMatrix(loginModelMatrix);
+        loginModel->draw();
+
+        shaderLights->setMaterial(Material(glm::vec4(0.1),
+                                           glm::vec4(0.419, 0.678, 0.274, 1),
+                                           glm::vec4(0.047, 1, 0, 1), 64));
 
         for (const auto &item : treeTrans) {
             shaderLights->modelMatrix(item);

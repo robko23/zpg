@@ -14,6 +14,7 @@
 #include "scenes/SceneFpsDisplay.h"
 #include "scenes/SceneHelloTexture.h"
 #include "scenes/SceneLightningBalls.h"
+#include "scenes/SceneModels.h"
 #include "scenes/SceneSuzi.h"
 #include "scenes/SceneSwitcher.h"
 #include "scenes/SceneTreeLights.h"
@@ -34,10 +35,12 @@ int main() {
                 std::make_shared<SceneLightningBalls>(window, assetManager);
             auto basicTextureScene =
                 std::make_shared<SceneHeloTexture>(window, assetManager);
+            auto modelScene = std::make_shared<SceneModels>(window, assetManager);
 
             auto mainScene = SceneSwitcher();
             mainScene.addScene(forest2);
             mainScene.addScene(basicTextureScene);
+            mainScene.addScene(modelScene);
             mainScene.addScene(fps);
             mainScene.addScene(suziScene);
             mainScene.addScene(ballsScene);

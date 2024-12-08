@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <cstdint>
 #define GLM_ENABLE_EXPERIMENTAL
+#include "../Material.h"
 #include "SSBO.h"
 #include "ShaderCommon.h"
 #include <glm/gtx/string_cast.hpp>
@@ -100,40 +101,6 @@ class alignas(16) LightGLSL final {
 };
 // So that I don't accidentally add more fields
 static_assert(sizeof(LightGLSL) == 80);
-
-class Material {
-  private:
-    friend class ShaderLights;
-
-    glm::vec4 ambient;
-    glm::vec4 diffuse;
-    glm::vec4 specular;
-    float shininess;
-
-  public:
-    Material(const glm::vec4 &ambient, const glm::vec4 &diffuse,
-             const glm::vec4 &specular, float shininess)
-        : ambient(ambient), diffuse(diffuse), specular(specular),
-          shininess(shininess) {}
-
-    const glm::vec4 &getAmbient() const { return ambient; }
-
-    void setAmbient(const glm::vec4 &ambient) { Material::ambient = ambient; }
-
-    const glm::vec4 &getDiffuse() const { return diffuse; }
-
-    void setDiffuse(const glm::vec4 &diffuse) { Material::diffuse = diffuse; }
-
-    const glm::vec4 &getSpecular() const { return specular; }
-
-    void setSpecular(const glm::vec4 &specular) {
-        Material::specular = specular;
-    }
-
-    float getShininess() const { return shininess; }
-
-    void setShininess(float shininess) { Material::shininess = shininess; }
-};
 
 class ShaderLights
     : public ShaderCommon<ShaderLights, "lights.glsl", "lights.glsl"> {

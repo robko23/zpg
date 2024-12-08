@@ -1,4 +1,5 @@
 #pragma once
+#include "drawable/DynamicModel.h"
 #include "shaders/Shader.h"
 
 #include "Texture.h"
@@ -15,6 +16,7 @@ enum AssetType : uint8_t {
     ASSET_VERTEX_SHADER,
     ASSET_FRAGMENT_SHADER,
     ASSET_TEXTURE,
+    ASSET_MODEL,
 };
 
 class AssetManager {
@@ -26,6 +28,9 @@ class AssetManager {
         loadedTextures;
     std::optional<std::shared_ptr<Cubemap>> loadedCubemap = {};
 
+    std::unordered_map<std::filesystem::path, std::shared_ptr<DynamicModel>>
+        loadedModels;
+
     constexpr std::filesystem::path getAssetPrefix(AssetType type) const {
         switch (type) {
         case ASSET_VERTEX_SHADER:
@@ -34,6 +39,8 @@ class AssetManager {
             return "shaders/fragment";
         case ASSET_TEXTURE:
             return "textures";
+        case ASSET_MODEL:
+            return "models/";
         }
         UNREACHABLE("Invalid AssetType: %d", type);
     }
@@ -146,6 +153,26 @@ class AssetManager {
             Cubemap::load(xpos, xneg, ypos, yneg, zpos, zneg, currentTexture);
         currentTexture = currentTexture + 1;
         loadedCubemap = it;
+        return it;
+    }
+
+    std::shared_ptr<DynamicModel> loadModel(const std::string &path) {
+        auto fullPath = getAssetPath(AssetType::ASSET_MODEL, path.c_str());
+        if (loadedModels.find(fullPath) != loadedModels.end()) {
+            std::cout << "Model at " << fullPath << " is already loaded"
+                      << std::endl;
+            return loadedModels[fullPath];
+        }
+        std::cout << "Model at " << fullPath << " is not loaded, loading"
+                  << std::endl;
+
+        auto maybeBuf = readFileBinary(fullPath);
+        DEBUG_ASSERTF(maybeBuf.has_value(), "Failed to read model %s",
+                      path.c_str());
+
+        auto buf = maybeBuf.value();
+        auto it = DynamicModel::load(buf);
+        loadedModels[fullPath] = it;
         return it;
     }
 };

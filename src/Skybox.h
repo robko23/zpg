@@ -33,7 +33,7 @@ class Skybox : public Observer<CameraProperties> {
     Skybox(Skybox &other) = delete;
 
     static std::shared_ptr<Skybox>
-    construct(Camera &camera, const std::shared_ptr<AssetManager> am) {
+    construct(Camera &camera, const std::shared_ptr<AssetManager>& am) {
         auto self = std::shared_ptr<Skybox>(new Skybox(camera, am));
         camera.attach(self);
         return self;

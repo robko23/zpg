@@ -7,9 +7,36 @@
 #include <GL/gl.h>
 #include <GL/glu.h>
 
+#ifdef GL_CALL
+#undef GL_CALL
+#endif
+
+/**
+ * Simple wrapper around any OpenGL function call which just calls the specified
+ * function and asserts that there is no error.
+ */
+#define GL_CALL(func, ...)                                                     \
+    {                                                                          \
+        func(__VA_ARGS__);                                                     \
+        gl::assertNoErrorFunc(#func);                                          \
+    }
+
 namespace gl {
 
 static_assert(sizeof(GLint) == sizeof(int));
+
+static inline void assertNoErrorFunc(const char *funcName) {
+#ifdef DEBUG_ASSERTIONS
+    GLenum err = glGetError();
+    if (GL_NO_ERROR != err) {
+        const GLubyte *string;
+        string = gluErrorString(err);
+        std::cout << "OpenGL error when calling function " << funcName << ": "
+                  << string << std::endl;
+    }
+    DEBUG_ASSERT(GL_NO_ERROR == err);
+#endif
+}
 
 static inline void assertNoError() {
 #ifdef DEBUG_ASSERTIONS
@@ -17,7 +44,7 @@ static inline void assertNoError() {
     if (GL_NO_ERROR != err) {
         const GLubyte *string;
         string = gluErrorString(err);
-		std::cout << "OpenGL error: " << string << std::endl;
+        std::cout << "OpenGL error: " << string << std::endl;
     }
     DEBUG_ASSERT(GL_NO_ERROR == err);
 #endif

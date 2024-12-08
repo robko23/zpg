@@ -4,108 +4,16 @@
 #include <algorithm>
 #include <cstdint>
 #define GLM_ENABLE_EXPERIMENTAL
+#include "../LightGLSL.h"
+#include "../LightsCollection.h"
 #include "../Material.h"
-#include "SSBO.h"
 #include "ShaderCommon.h"
 #include <glm/gtx/string_cast.hpp>
-
-enum LightType { None = 0, Point = 1, Directional = 2, Reflector = 3 };
-
-/*
- * Matching declaration for struct Light in fragment/lights.glsl
- */
-class alignas(16) LightGLSL final {
-  private:
-    /*
-     * More info about memory layout here:
-     * https://www.khronos.org/opengl/wiki/Interface_Block_(GLSL)#Memory_layout
-     */
-    glm::vec3 position;
-    uint32_t _padding_0 = 0;
-
-    glm::vec3 direction;
-    uint32_t _padding_1 = 0;
-
-    glm::vec3 attenuation;
-    uint32_t _padding_2 = 0;
-
-    glm::vec4 color;
-
-    int type = 1; // 0 - none, 1 - point, 2 - direction, 3 - reflector
-    float cutoff = 0;
-    uint32_t id = UINT32_MAX;
-
-    inline void assertInitialized() const {
-        DEBUG_ASSERTF(id != UINT32_MAX, "This light is not initialized");
-    }
-
-  public:
-    explicit LightGLSL(const glm::vec3 &position, const glm::vec3 &direction,
-                       const glm::vec3 &attenuation, const glm::vec4 &color)
-        : position(position), direction(direction), attenuation(attenuation),
-          color(color) {}
-
-    [[nodiscard]] const glm::vec3 &getPosition() const { return position; }
-
-    void setId(uint32_t newId) {
-        DEBUG_ASSERTF(
-            id == UINT32_MAX,
-            "Trying to reassign id to this light. Prev id: %u, new id: %u", id,
-            newId);
-        id = newId;
-    }
-
-    void setPosition(const glm::vec3 &position) {
-        assertInitialized();
-        LightGLSL::position = position;
-    }
-
-    void setDirection(const glm::vec3 &direction) {
-        assertInitialized();
-        LightGLSL::direction = direction;
-    }
-
-    void setAttenuation(const glm::vec3 &attenuation) {
-        assertInitialized();
-        LightGLSL::attenuation = attenuation;
-    }
-
-    void setColor(const glm::vec4 &color) {
-        assertInitialized();
-        LightGLSL::color = color;
-    }
-
-    void setType(LightType val) {
-        assertInitialized();
-        type = val;
-    }
-
-    void setCutoff(float val) {
-        assertInitialized();
-        cutoff = val;
-    }
-
-    [[nodiscard]] const glm::vec4 &getColor() const { return color; }
-    [[nodiscard]] const glm::vec3 &getDirection() const { return direction; }
-    [[nodiscard]] const glm::vec3 &getAttenuation() const {
-        return attenuation;
-    }
-    [[nodiscard]] const uint32_t &getId() const {
-        assertInitialized();
-        return id;
-    }
-
-    [[nodiscard]] const LightType getType() const {
-        return static_cast<LightType>(type);
-    }
-};
-// So that I don't accidentally add more fields
-static_assert(sizeof(LightGLSL) == 80);
 
 class ShaderLights
     : public ShaderCommon<ShaderLights, "lights.glsl", "lights.glsl"> {
   private:
-    SSBO<LightGLSL> lights;
+    std::shared_ptr<LightsCollection> lightCollection;
     int32_t flags = 0; // Lightning features, see fragment/lights.glsl
 
     const int32_t FLAG_AMBIENT = 1 << 0;
@@ -138,41 +46,8 @@ class ShaderLights
     ShaderLights(const ShaderLights &other) = delete;
 
     ShaderLights(ShaderLights &&other) noexcept
-        : ShaderCommon(std::move(other)), lights(std::move(other.lights)) {}
-
-    /*
-     * Adds a light to the shader and sends it to the SSBO
-     * @returns Index where the light is located. You can use it to modify it
-     */
-    size_t addLight(LightGLSL light) {
-        size_t idx = lights.objects().size();
-        light.setId(idx);
-        lights.objects().emplace_back(std::move(light));
-        lights.realloc();
-        return idx;
-    }
-
-    void removeLight(size_t id) {
-        auto &obj = lights.objects();
-        auto it =
-            std::find_if(obj.begin(), obj.end(), [id](const LightGLSL &val) {
-                return val.getId() == id;
-            });
-        DEBUG_ASSERTF(it != obj.end(),
-                      "Trying to remove non existent light: %zu", id);
-        obj.erase(it);
-        lights.realloc();
-    }
-
-    LightGLSL &getLight(size_t idx) {
-        DEBUG_ASSERT(idx < lights.objects().size());
-        return lights.objects().at(idx);
-    }
-
-    void updateLight(size_t idx) {
-        DEBUG_ASSERT(idx < lights.objects().size());
-        lights.updateAt(idx);
-    }
+        : ShaderCommon(std::move(other)),
+          lightCollection(std::move(other.lightCollection)) {}
 
 #define BITFLAG(SET_FUNC_NAME, HAS_FUNC_NAME, FLAG_NAME)                       \
     void SET_FUNC_NAME(bool enabled) {                                         \
@@ -194,6 +69,10 @@ class ShaderLights
     BITFLAG(setHalfwayEnabled, hasHalfway, FLAG_HALFWAY);
 
 #undef BITFLAG
+
+    void setLightCollection(const std::shared_ptr<LightsCollection> val) {
+        lightCollection = val;
+    }
 
     void applyConstant() {
         setAmbientEnabled(true);
@@ -225,15 +104,16 @@ class ShaderLights
 
     void setMaterial(const Material &material) {
         program.bind();
-        program.bindParam("material.ambient", material.ambient);
-        program.bindParam("material.diffuse", material.diffuse);
-        program.bindParam("material.specular", material.specular);
-        program.bindParam("material.shininess", material.shininess);
+        program.bindParam("material.ambient", material.getAmbient());
+        program.bindParam("material.diffuse", material.getDiffuse());
+        program.bindParam("material.specular", material.getSpecular());
+        program.bindParam("material.shininess", material.getShininess());
         program.unbind();
     }
 
     void bind() override {
         ShaderCommon::bind();
-        lights.bind(0);
+        DEBUG_ASSERT_NOT_NULL(lightCollection);
+        lightCollection->bind(0);
     }
 };

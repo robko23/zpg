@@ -14,6 +14,7 @@
 class SceneTreeLights : public BasicScene {
   private:
     Tree tree;
+    std::shared_ptr<LightsCollection> lights;
     std::shared_ptr<ShaderLights> shaderLightning;
     std::shared_ptr<ShaderLightCube> shaderLightCube;
     TransformationBuilder treeTransformations;
@@ -104,10 +105,11 @@ class SceneTreeLights : public BasicScene {
   public:
     explicit SceneTreeLights(const std::shared_ptr<GLWindow> &window,
                              const std::shared_ptr<AssetManager> &loader)
-        : BasicScene(window),
+        : BasicScene(window), lights(std::make_shared<LightsCollection>()),
           shaderLightning(ShaderLights::load(loader).value()),
           shaderLightCube(ShaderLightCube::load(loader).value()),
-          pointLight(PointLight(camera, shaderLightning, shaderLightCube)) {
+          pointLight(PointLight(camera, lights, shaderLightCube)) {
+        shaderLightning->setLightCollection(lights);
         camera.attach(shaderLightning);
         camera.projection()->attach(shaderLightning);
 

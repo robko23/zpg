@@ -6,13 +6,13 @@
 
 #include "Camera.h"
 #include "GLWindow.h"
+#include "LightsCollection.h"
 #include "Observer.h"
 #include "Transformation.h"
 #include "assertions.h"
 #include "drawable/Cube.h"
 #include "imgui.h"
 #include "shaders/ShaderLightCube.h"
-#include "shaders/ShaderLights.h"
 #include <cstdint>
 #include <cstdio>
 #include <glm/glm.hpp>
@@ -34,7 +34,7 @@ class Light {
   private:
     Cube cube;
     std::shared_ptr<ShaderLightCube> shaderLightCube;
-    std::shared_ptr<ShaderLights> shaderLightning;
+    std::shared_ptr<LightsCollection> lightsCollection;
     size_t lightIndex = SIZE_MAX;
 
     std::optional<std::string> menuTitle = {};
@@ -72,7 +72,7 @@ class Light {
     }
 
     [[nodiscard]] LightGLSL &getLight() const {
-        return shaderLightning->getLight(lightIndex);
+        return lightsCollection->getLight(lightIndex);
     }
 
   protected:
@@ -81,7 +81,7 @@ class Light {
     void update() {
         DEBUG_ASSERTF(lightIndex != SIZE_MAX,
                       "Use of unitialized or moved light");
-        LightGLSL &light = shaderLightning->getLight(lightIndex);
+        LightGLSL &light = lightsCollection->getLight(lightIndex);
         light.setPosition(position);
         light.setAttenuation(
             glm::vec3(attenuationX, attenuationY, attenuationZ));
@@ -89,7 +89,7 @@ class Light {
         light.setDirection(direction);
         light.setCutoff(cutoff);
         shaderLightCube->setLightColor(light.getColor());
-        shaderLightning->updateLight(lightIndex);
+        lightsCollection->updateLight(lightIndex);
         auto *translate =
             dynamic_cast<TransformationTranslate *>(transformations.at(0));
         DEBUG_ASSERT_NOT_NULL(translate);
@@ -98,15 +98,16 @@ class Light {
 
   public:
     explicit Light(Camera &camera,
-                   const std::shared_ptr<ShaderLights> &shaderLights,
+                   const std::shared_ptr<LightsCollection> &lightsCollection,
                    const std::shared_ptr<ShaderLightCube> &shaderLightCube)
         : transformations(
               TransformationBuilder().translate(position).scale(0.2)),
-          shaderLightCube(shaderLightCube), shaderLightning(shaderLights) {
+          shaderLightCube(shaderLightCube), lightsCollection(lightsCollection) {
         camera.attach(shaderLightCube);
         camera.projection()->attach(shaderLightCube);
 
-        lightIndex = shaderLights->addLight(
+		DEBUG_ASSERT_NOT_NULL(lightsCollection);
+        lightIndex = lightsCollection->addLight(
             LightGLSL(position, glm::vec3(0), glm::vec3(0), glm::vec4(1)));
         DEBUG_ASSERT(lightIndex != SIZE_MAX);
         update();
@@ -121,7 +122,7 @@ class Light {
           direction(other.direction), cutoff(other.cutoff),
           cube(std::move(other.cube)),
           shaderLightCube(std::move(other.shaderLightCube)),
-          shaderLightning(std::move(other.shaderLightning)),
+          lightsCollection(std::move(other.lightsCollection)),
           lightIndex(other.lightIndex), menuTitle(std::move(other.menuTitle)),
           configurable(other.configurable), renderCube(other.renderCube),
           enabled(other.enabled), prevType(other.prevType) {
@@ -195,7 +196,7 @@ class Light {
 
     virtual ~Light() {
         if (lightIndex != SIZE_MAX) {
-            shaderLightning->removeLight(lightIndex);
+            lightsCollection->removeLight(lightIndex);
         }
     };
 };
@@ -208,10 +209,11 @@ class PointLight : public Light {
 
 class Flashlight : public Light, public Observer<CameraProperties> {
   private:
-    explicit Flashlight(Camera &camera,
-                        const std::shared_ptr<ShaderLights> &shaderLights,
-                        const std::shared_ptr<ShaderLightCube> &shaderLightCube)
-        : Light(camera, shaderLights, shaderLightCube) {
+    explicit Flashlight(
+        Camera &camera,
+        const std::shared_ptr<LightsCollection> &lightsCollection,
+        const std::shared_ptr<ShaderLightCube> &shaderLightCube)
+        : Light(camera, lightsCollection, shaderLightCube) {
         setType(LightType::Reflector);
         attenuationX = 0.1;
         attenuationY = 0.01;
@@ -221,10 +223,11 @@ class Flashlight : public Light, public Observer<CameraProperties> {
 
   public:
     static std::shared_ptr<Flashlight>
-    construct(Camera &camera, const std::shared_ptr<ShaderLights> &shaderLights,
+    construct(Camera &camera,
+              const std::shared_ptr<LightsCollection> &lightsCollection,
               const std::shared_ptr<ShaderLightCube> &shaderLightCube) {
         auto self = std::shared_ptr<Flashlight>(
-            new Flashlight(camera, shaderLights, shaderLightCube));
+            new Flashlight(camera, lightsCollection, shaderLightCube));
         camera.attach(self);
         return self;
     }
@@ -296,10 +299,10 @@ class Firefly : public Light {
 
   public:
     explicit Firefly(Camera &camera,
-                     const std::shared_ptr<ShaderLights> &shaderLights,
+                     const std::shared_ptr<LightsCollection> &lightsCollectio,
                      const std::shared_ptr<GLWindow> &window,
                      const std::shared_ptr<ShaderLightCube> &shaderLightCube)
-        : Light(camera, shaderLights, shaderLightCube),
+        : Light(camera, lightsCollectio, shaderLightCube),
           window(std::move(window)) {
         std::random_device randomDevice;
         std::mt19937 seedGenerator(randomDevice());

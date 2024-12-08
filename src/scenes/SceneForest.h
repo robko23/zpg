@@ -11,7 +11,7 @@
 #include "../Transformation.h"
 #include "../drawable/Bush.h"
 #include "../drawable/Tree.h"
-#include "../shaders/ShaderBasicTexture.h"
+#include "../shaders/ShaderLightTexture.h"
 #include "../shaders/ShaderLights.h"
 #include "BasicScene.h"
 #include "imgui.h"
@@ -22,15 +22,23 @@
 class ForestFloor {
   private:
     std::shared_ptr<Texture> textureGrass;
-    std::shared_ptr<ShaderBasicTexture> shaderTexture;
+    std::shared_ptr<ShaderLightTexture> shaderTexture;
     Cube cube;
     glm::mat4 modelMatrix;
 
   public:
     explicit ForestFloor(const std::shared_ptr<AssetManager> &am,
-                         Camera &camera)
+                         Camera &camera,
+                         const std::shared_ptr<LightsCollection> &lights)
         : textureGrass(am->loadTexture("grass.png")),
-          shaderTexture(ShaderBasicTexture::load(am).value()) {
+          shaderTexture(ShaderLightTexture::load(am).value()) {
+        shaderTexture->setLightCollection(lights);
+
+        auto material =
+            Material(glm::vec4(0.1), glm::vec4(0.419, 0.678, 0.274, 1),
+                     glm::vec4(0.047, 1, 0, 1), 64);
+        shaderTexture->setMaterial(material);
+
         camera.attach(shaderTexture);
         camera.projection()->attach(shaderTexture);
         modelMatrix = TransformationBuilder()
@@ -39,7 +47,7 @@ class ForestFloor {
                           .build();
 
         shaderTexture->bind();
-        shaderTexture->setTextureId(textureGrass->getTextureUnit());
+        shaderTexture->setTextureUnitId(textureGrass->getTextureUnit());
         shaderTexture->modelMatrix(modelMatrix);
         shaderTexture->unbind();
     }
@@ -57,6 +65,8 @@ class SceneForest : public BasicScene {
   private:
     Tree tree;
     Bush bush;
+    std::shared_ptr<LightsCollection> lights;
+
     std::shared_ptr<ShaderLights> shaderLights;
     std::shared_ptr<ShaderLightCube> shaderLightCube;
 
@@ -80,7 +90,7 @@ class SceneForest : public BasicScene {
 
     std::shared_ptr<DynamicModel> houseModel;
     std::shared_ptr<Texture> houseTexture;
-    std::shared_ptr<ShaderBasicTexture> textureShader;
+    std::shared_ptr<ShaderLightTexture> shaderLightsTexture;
     glm::mat4 houseModelMatrix;
 
     void renderMenu() override {
@@ -139,22 +149,25 @@ class SceneForest : public BasicScene {
   public:
     explicit SceneForest(const std::shared_ptr<GLWindow> &window,
                          const std::shared_ptr<AssetManager> &loader)
-        : BasicScene(window), shaderLights(ShaderLights::load(loader).value()),
+        : BasicScene(window), lights(std::make_shared<LightsCollection>()),
+          shaderLights(ShaderLights::load(loader).value()),
           shaderLightCube(ShaderLightCube::load(loader).value()),
-          sun(camera, shaderLights, shaderLightCube),
-          flashlight(
-              Flashlight::construct(camera, shaderLights, shaderLightCube)),
-          skybox(Skybox::construct(camera, loader)), floor(loader, camera),
+          sun(camera, lights, shaderLightCube),
+          flashlight(Flashlight::construct(camera, lights, shaderLightCube)),
+          skybox(Skybox::construct(camera, loader)),
+          floor(loader, camera, lights),
           houseModel(loader->loadModel("house.obj")),
           houseTexture(loader->loadTexture("house.png")),
-          textureShader(ShaderBasicTexture::load(loader).value()) {
+          shaderLightsTexture(ShaderLightTexture::load(loader).value()) {
+        shaderLights->setLightCollection(lights);
+        shaderLightsTexture->setLightCollection(lights);
         treeTrans = scatterObjects(numberOfTrees);
         bushesTrans = scatterObjects(numberOfBushes);
         camera.attach(shaderLights);
         camera.projection()->attach(shaderLights);
 
-        camera.attach(textureShader);
-        camera.projection()->attach(textureShader);
+        camera.attach(shaderLightsTexture);
+        camera.projection()->attach(shaderLightsTexture);
 
         shaderLights->applyBlinnPhong();
 
@@ -171,7 +184,7 @@ class SceneForest : public BasicScene {
 
         fireflies.reserve(NUM_FIREFLIES);
         for (int i = 0; i < NUM_FIREFLIES; i++) {
-            Firefly firefly(camera, shaderLights, window, shaderLightCube);
+            Firefly firefly(camera, lights, window, shaderLightCube);
             firefly.setPosition(glm::vec3(i, 5, i));
             fireflies.emplace_back(std::move(firefly));
         }
@@ -181,17 +194,19 @@ class SceneForest : public BasicScene {
                                // 90 deg
                                .rotateY(1.570796)
                                .build();
+
+        shaderLightsTexture->setMaterial(houseModel->getMaterial());
     }
 
     void renderScene() override {
         skybox->render();
         floor.render();
 
-        textureShader->bind();
-        textureShader->setTextureId(houseTexture->getTextureUnit());
-        textureShader->modelMatrix(houseModelMatrix);
+        shaderLightsTexture->bind();
+        shaderLightsTexture->setTextureUnitId(houseTexture->getTextureUnit());
+        shaderLightsTexture->modelMatrix(houseModelMatrix);
         houseModel->draw();
-        textureShader->unbind();
+        shaderLightsTexture->unbind();
 
         shaderLightCube->bind();
         sun.render();

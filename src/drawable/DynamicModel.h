@@ -18,6 +18,8 @@
 #include "assimp/types.h"
 
 #include "glm/ext/vector_float4.hpp"
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/string_cast.hpp>
 
 #include "../Material.h"
 #include "../gl_utils.h"
@@ -38,6 +40,7 @@ class DynamicModel : public Drawable {
     uint32_t VBO = 0;
     uint32_t IBO = 0;
     size_t indiciesCount = 0;
+    Material material;
 
     const static inline uint32_t importOptions =
         aiProcess_Triangulate | aiProcess_OptimizeMeshes |
@@ -47,15 +50,17 @@ class DynamicModel : public Drawable {
         return {col.r, col.g, col.b, col.a};
     }
 
-    DynamicModel(uint32_t vao, uint32_t vbo, uint32_t ibo, size_t indiciesCount)
-        : VAO(vao), VBO(vbo), IBO(ibo), indiciesCount(indiciesCount) {}
+    DynamicModel(uint32_t vao, uint32_t vbo, uint32_t ibo, size_t indiciesCount,
+                 Material material)
+        : VAO(vao), VBO(vbo), IBO(ibo), indiciesCount(indiciesCount),
+          material(material) {}
 
   public:
     DynamicModel(DynamicModel &) = delete;
     DynamicModel &operator=(const DynamicModel &) = delete;
     DynamicModel(DynamicModel &&other) noexcept
         : VAO(other.VAO), VBO(other.VBO), IBO(other.IBO),
-          indiciesCount(other.indiciesCount) {
+          indiciesCount(other.indiciesCount), material(other.material) {
         other.VAO = 0;
         other.VBO = 0;
         other.IBO = 0;
@@ -81,14 +86,23 @@ class DynamicModel : public Drawable {
             if (AI_SUCCESS ==
                 aiGetMaterialColor(mat, AI_MATKEY_COLOR_AMBIENT, &col)) {
                 material.setAmbient(aiColToGlm(col));
+            } else {
+                UNREACHABLE("Failed to read ambinet material color")
             }
             if (AI_SUCCESS ==
                 aiGetMaterialColor(mat, AI_MATKEY_COLOR_DIFFUSE, &col)) {
-                material.setDiffuse(aiColToGlm(col));
+                auto val = aiColToGlm(col);
+                std::cout << "Diffuse color in material: "
+                          << glm::to_string(val) << std::endl;
+                material.setDiffuse(val);
+            } else {
+                UNREACHABLE("Failed to read diffuse material color")
             }
             if (AI_SUCCESS ==
                 aiGetMaterialColor(mat, AI_MATKEY_COLOR_SPECULAR, &col)) {
-                material.setDiffuse(aiColToGlm(col));
+                material.setSpecular(aiColToGlm(col));
+            } else {
+                UNREACHABLE("Failed to read specular material color")
             }
         }
 
@@ -183,10 +197,12 @@ class DynamicModel : public Drawable {
             GL_CALL(glBindVertexArray, 0);
 
             return std::shared_ptr<DynamicModel>(
-                new DynamicModel(vao, vbo, ibo, indiciesCount));
+                new DynamicModel(vao, vbo, ibo, indiciesCount, material));
         }
         UNREACHABLE("At least one ")
     }
+
+    [[nodiscard]] const Material &getMaterial() const { return material; }
 
     void draw() override {
         GL_CALL(glBindVertexArray, VAO);

@@ -23,7 +23,7 @@ class SceneModels : public BasicScene {
         : BasicScene(window), model(loader->loadModel("house.obj")),
           shader(ShaderBasicTexture::load(loader).value()),
           texture(loader->loadTexture("house.png")),
-          skybox(Skybox::construct(camera, loader)) {
+          skybox(Skybox::construct(camera, loader, "skybox-bright", "jpg")) {
         camera.attach(shader);
         camera.projection()->attach(shader);
         shader->setTextureId(texture->getTextureUnit());

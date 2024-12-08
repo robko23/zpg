@@ -10,6 +10,7 @@
 #include <filesystem>
 #include <memory>
 #include <optional>
+#include <sstream>
 #include <unordered_map>
 
 enum AssetType : uint8_t {
@@ -26,7 +27,8 @@ class AssetManager {
     size_t currentTexture = 0;
     std::unordered_map<std::filesystem::path, std::shared_ptr<Texture>>
         loadedTextures;
-    std::optional<std::shared_ptr<Cubemap>> loadedCubemap = {};
+    std::unordered_map<std::filesystem::path, std::shared_ptr<Cubemap>>
+        loadedCubemaps;
 
     std::unordered_map<std::filesystem::path, std::shared_ptr<DynamicModel>>
         loadedModels;
@@ -131,28 +133,42 @@ class AssetManager {
         return it;
     }
 
-    std::shared_ptr<Cubemap> loadCubemap() {
-        if (loadedCubemap.has_value()) {
-            std::cout << "Cubemap/skybox is already loaded" << std::endl;
-            return loadedCubemap.value();
+    std::shared_ptr<Cubemap> loadCubemap(const std::string &name,
+                                         const std::string &fileExt) {
+        auto cubemapBase = getAssetPath(AssetType::ASSET_TEXTURE, name.c_str());
+        if (loadedCubemaps.find(cubemapBase) != loadedCubemaps.end()) {
+            std::cout << "Cubemap/skybox at " << name << " is already loaded"
+                      << std::endl;
+            return loadedCubemaps[cubemapBase];
         }
-        std::cout << "Loading cubemap/skybox" << std::endl;
-        auto cubemapBase = getAssetPath(AssetType::ASSET_TEXTURE, "skybox");
+        std::cout << "Loading cubemap at " << name << std::endl;
 
-        auto xpos = readFileBinary(cubemapBase / "posx.jpg").value();
-        auto xneg = readFileBinary(cubemapBase / "negx.jpg").value();
-        auto ypos = readFileBinary(cubemapBase / "posy.jpg").value();
-        auto yneg = readFileBinary(cubemapBase / "negy.jpg").value();
-        auto zpos = readFileBinary(cubemapBase / "posz.jpg").value();
-        auto zneg = readFileBinary(cubemapBase / "negz.jpg").value();
+        auto ss = std::basic_stringstream<char>();
+        ss << "posx." << fileExt;
+        auto xpos = readFileBinary(cubemapBase / ss.str()).value();
+        ss.str("");
+        ss << "negx." << fileExt;
+        auto xneg = readFileBinary(cubemapBase / ss.str()).value();
+        ss.str("");
+        ss << "posy." << fileExt;
+        auto ypos = readFileBinary(cubemapBase / ss.str()).value();
+        ss.str("");
+        ss << "negy." << fileExt;
+        auto yneg = readFileBinary(cubemapBase / ss.str()).value();
+        ss.str("");
+        ss << "posz." << fileExt;
+        auto zpos = readFileBinary(cubemapBase / ss.str()).value();
+        ss.str("");
+        ss << "negz." << fileExt;
+        auto zneg = readFileBinary(cubemapBase / ss.str()).value();
 
         DEBUG_ASSERTF(currentTexture <= maxTextures,
                       "Exceeded max textures: %zu", maxTextures);
 
         auto it =
             Cubemap::load(xpos, xneg, ypos, yneg, zpos, zneg, currentTexture);
-        currentTexture = currentTexture + 1;
-        loadedCubemap = it;
+
+        loadedCubemaps[cubemapBase] = it;
         return it;
     }
 

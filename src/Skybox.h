@@ -21,9 +21,10 @@ class Skybox : public Observer<CameraProperties> {
     TransformationTranslate translate;
     bool follow = true;
 
-    explicit Skybox(Camera &camera, const std::shared_ptr<AssetManager> am)
+    explicit Skybox(Camera &camera, const std::shared_ptr<AssetManager> am,
+                    const std::string &name, const std::string &fileExt)
         : shaderSkybox(ShaderSkybox::load(am).value()),
-          cubemap(am->loadCubemap()),
+          cubemap(am->loadCubemap(name, fileExt)),
           translate(TransformationTranslate(glm::vec3(0))) {
         camera.attach(shaderSkybox);
         camera.projection()->attach(shaderSkybox);
@@ -33,8 +34,10 @@ class Skybox : public Observer<CameraProperties> {
     Skybox(Skybox &other) = delete;
 
     static std::shared_ptr<Skybox>
-    construct(Camera &camera, const std::shared_ptr<AssetManager>& am) {
-        auto self = std::shared_ptr<Skybox>(new Skybox(camera, am));
+    construct(Camera &camera, const std::shared_ptr<AssetManager> &am,
+              const std::string &name, const std::string &fileExt) {
+        auto self =
+            std::shared_ptr<Skybox>(new Skybox(camera, am, name, fileExt));
         camera.attach(self);
         return self;
     }
@@ -53,6 +56,6 @@ class Skybox : public Observer<CameraProperties> {
         shaderSkybox->setCubemapId(cubemap->getTextureUnit());
         cube.draw();
         shaderSkybox->unbind();
-		glClear(GL_DEPTH_BUFFER_BIT);
+        glClear(GL_DEPTH_BUFFER_BIT);
     }
 };

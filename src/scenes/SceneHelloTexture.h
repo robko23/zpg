@@ -45,7 +45,7 @@ class SceneHeloTexture : public BasicScene {
           woodenFence(loader->loadTexture("wooden_fence.png")),
           grass(loader->loadTexture("grass.png")), window(window),
           shader(ShaderBasicTexture::load(loader).value()),
-          skybox(Skybox::construct(camera, loader)) {
+          skybox(Skybox::construct(camera, loader, "skybox-bright", "jpg")) {
         shader->update(CameraProperties::defaultProps());
         shader->update(ProjectionMatrix::_default());
         trans = TransformationBuilder().moveX(0).rotateY(0);

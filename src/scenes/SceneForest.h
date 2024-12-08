@@ -154,7 +154,7 @@ class SceneForest : public BasicScene {
           shaderLightCube(ShaderLightCube::load(loader).value()),
           sun(camera, lights, shaderLightCube),
           flashlight(Flashlight::construct(camera, lights, shaderLightCube)),
-          skybox(Skybox::construct(camera, loader)),
+          skybox(Skybox::construct(camera, loader, "skybox-night", "png")),
           floor(loader, camera, lights),
           houseModel(loader->loadModel("house.obj")),
           houseTexture(loader->loadTexture("house.png")),
